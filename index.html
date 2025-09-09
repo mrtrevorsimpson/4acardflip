@@ -35,32 +35,40 @@
     /* Grid */
     .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
     @media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    @media (max-width: 720px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px)  { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 480px)  { .grid { grid-template-columns: 1fr; } }
 
     /* Flip cards */
-    .card { position: relative; perspective: 1100px; height: 260px; }
+    .card { position: relative; perspective: 1100px; height: 380px; }
     .card > button { all: unset; position: absolute; inset: 0; cursor: pointer; outline: none; border-radius: 16px; }
     .card-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.8,.2,1); }
-    /* Match aria-pressed on the BUTTON, not the wrapper */
     .card > button[aria-pressed="true"] .card-inner { transform: rotateY(180deg); }
 
     .face {
       position: absolute; inset: 0;
-      display: grid; grid-template-rows: 1fr auto; align-items: center; gap: .5rem;
+      display: flex; flex-direction: column; align-items: stretch; gap: .5rem;
       backface-visibility: hidden; border-radius: 16px; padding: 1rem;
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
       border: 1px solid rgba(148,163,184,.22); box-shadow: 0 10px 30px rgba(0,0,0,.25);
       overflow: hidden;
     }
-    .front .title { font-weight: 800; font-size: 1.15rem; z-index: 2; }
-    /* Watermark: ~70% transparent (opacity .3) */
+
+    /* Front: bold title + watermark */
+    .front { position: relative; }
+    .front .title { font-weight: 800; font-size: 1.05rem; z-index: 2; align-self: flex-start; }
+    /* ~70% transparent image (opacity .3) */
     .front .watermark {
-      position: absolute; right: -8px; bottom: -8px; width: 120px; height: 120px;
+      position: absolute; right: 12px; bottom: 12px; width: 160px; height: 160px;
       object-fit: contain; opacity: .3; pointer-events: none; z-index: 1;
     }
-    .back { transform: rotateY(180deg); }
-    .back p, .back li { font-weight: 400; }
+
+    /* Back: scrollable content so long text always fits */
+    .back { transform: rotateY(180deg); font-size: .92rem; line-height: 1.4; }
+    .back .content { overflow-y: auto; min-height: 0; flex: 1; -webkit-overflow-scrolling: touch; padding-right: .25rem; }
+
+    /* Better wrapping */
+    .face * { overflow-wrap: anywhere; }
+
     ul { margin: .25rem 0 0 1rem; padding: 0; }
     li { margin: .25rem 0; }
     footer { margin-top: 1rem; font-size: .85rem; color: var(--muted); text-align: center; }
@@ -87,11 +95,10 @@
           <div class="card-inner">
             <div class="face front">
               <div class="title"><strong>The 4As Lesson Plan</strong></div>
-              <img class="watermark" src="GettingStarted.png" alt=""
-                   onerror="this.style.display='none'" />
+              <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'"/>
             </div>
             <div class="face back">
-              <div>
+              <div class="content">
                 A structured lesson framework that boosts engagement and learning through four stages:
                 <ul>
                   <li>Activate – connect to prior knowledge or real-world experiences.</li>
@@ -112,11 +119,10 @@
           <div class="card-inner">
             <div class="face front">
               <div class="title"><strong>Activate — Engage & Connect</strong></div>
-              <img class="watermark" src="GettingStarted.png" alt=""
-                   onerror="this.style.display='none'" />
+              <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'"/>
             </div>
             <div class="face back">
-              <div>
+              <div class="content">
                 Objective: Stimulate interest and link new content to students’ prior knowledge or experiences.
                 <ul>
                   <li>Start with a question, scenario, or discussion related to their field.</li>
@@ -136,11 +142,10 @@
           <div class="card-inner">
             <div class="face front">
               <div class="title"><strong>Acquire — Teach New Concepts</strong></div>
-              <img class="watermark" src="GettingStarted.png" alt=""
-                   onerror="this.style.display='none'" />
+              <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'"/>
             </div>
             <div class="face back">
-              <div>
+              <div class="content">
                 Objective: Present new content in a structured and meaningful way.
                 <ul>
                   <li>Use multiple methods (lecture, demonstration, multimedia, guided practice).</li>
@@ -161,11 +166,10 @@
           <div class="card-inner">
             <div class="face front">
               <div class="title"><strong>Apply — Practice & Reinforce</strong></div>
-              <img class="watermark" src="GettingStarted.png" alt=""
-                   onerror="this.style.display='none'" />
+              <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'"/>
             </div>
             <div class="face back">
-              <div>
+              <div class="content">
                 Objective: Allow students to practice skills or apply knowledge in a meaningful way.
                 <ul>
                   <li>Assign hands-on activities, problem-solving tasks, or case studies.</li>
@@ -185,11 +189,10 @@
           <div class="card-inner">
             <div class="face front">
               <div class="title"><strong>Assess — Evaluate & Provide Feedback</strong></div>
-              <img class="watermark" src="GettingStarted.png" alt=""
-                   onerror="this.style.display='none'" />
+              <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'"/>
             </div>
             <div class="face back">
-              <div>
+              <div class="content">
                 Objective: Measure student understanding and provide constructive feedback.
                 <ul>
                   <li>Use formative checks (quick quizzes, discussions, demonstrations).</li>
@@ -249,4 +252,3 @@
   </script>
 </body>
 </html>
-
