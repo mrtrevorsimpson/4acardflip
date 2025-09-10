@@ -18,6 +18,11 @@
       background: var(--bg); color: var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
+
+    /* Outer wrappers used for scaling in embed mode (safe in normal mode as well) */
+    #stage { width: 100%; }
+    #scaled { width: 100%; }
+
     .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 28px; }
     header { display: grid; gap: 6px; margin-bottom: 12px; }
     h1 { margin: 0; font-size: clamp(1.4rem, 1rem + 1.5vw, 2rem); }
@@ -41,11 +46,13 @@
       overflow: hidden;
     }
 
+    /* FRONT (uniform title + centered logo box) */
     .front { justify-content: space-between; }
     .school-name { font-weight: 800; font-size: 1.02rem; line-height: 1.25; min-height: 2.6em; display:flex; align-items:center; }
     .school-img-wrap { flex: 0 0 90px; display: flex; justify-content: center; align-items: center; }
     .school-img { max-width: 85%; max-height: 100%; object-fit: contain; display: block; margin: auto; }
 
+    /* BACK */
     .back { transform: rotateY(180deg); text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     .coach-img { width: 60%; max-height: 150px; object-fit: cover; border-radius: 10px; margin: auto; border: 1px solid var(--border); }
     .coach-name { font-weight: 800; margin-top: 8px; font-size: 1rem; }
@@ -53,7 +60,10 @@
     footer { margin-top: 18px; font-size: .9rem; color: var(--muted); text-align: center; }
 
     /* ================== EMBED (Moodle) ================== */
-    .embed .wrap { width: 960px; max-width: none; padding: 8px; margin: 0 auto; }
+    /* In iframe, we force a compact, fixed-width layout (960px), then scale it down as needed */
+    .embed html, .embed body { overflow: hidden; }
+    .embed #scaled { width: 960px; margin: 0 auto; }  /* base width used for scaling */
+    .embed .wrap { max-width: 960px; padding: 8px; }
     .embed header, .embed footer { display: none !important; }
     .embed .grid {
       grid-template-columns: repeat(5, 1fr) !important;
@@ -70,138 +80,170 @@
 
   <script>
     (function () {
+      // Detect iframe OR ?embed=1, then apply .embed and enable scale-to-fit
       const inIframe = (() => { try { return window.self !== window.top; } catch { return true; }})();
       const p = new URLSearchParams(location.search);
-      if (inIframe || p.get('embed') === '1') {
+      const useEmbed = inIframe || p.get('embed') === '1';
+      if (useEmbed) {
         document.documentElement.classList.add('embed');
         document.body.classList.add('embed');
       }
+
+      function fit() {
+        if (!useEmbed) return;
+        const scaled = document.getElementById('scaled');
+        const stage  = document.getElementById('stage');
+        if (!scaled || !stage) return;
+
+        const baseW = 960;                // our intended 5-col width
+        const w = window.innerWidth || document.documentElement.clientWidth;
+        const s = Math.min(1, w / baseW); // scale down if iframe is narrower
+        scaled.style.transform = 'scale(' + s + ')';
+        scaled.style.transformOrigin = 'top center';
+
+        // After scaling, set stage height so the iframe doesn't need vertical scroll
+        // Measure the unscaled height, then apply the scale factor:
+        const baseH = scaled.offsetHeight;
+        stage.style.height = Math.ceil(baseH * s) + 'px';
+
+        // Hide scrollbars inside the iframe
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
+
+      window.addEventListener('load', fit);
+      window.addEventListener('resize', fit);
     })();
   </script>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Find your Coach</h1>
-      <div class="sub">Click your school to see your assigned coach.</div>
-    </header>
+  <div id="stage">
+    <div id="scaled">
+      <div class="wrap">
+        <header>
+          <h1>Find your Coach</h1>
+          <div class="sub">Click your school to see your assigned coach.</div>
+        </header>
 
-    <section class="grid" aria-label="Schools">
-      <!-- 1) Peters School of Business -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Peters School of Business</div>
-          <div class="school-img-wrap"><img class="school-img" src="petersschool.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
-        </div>
-      </div></button></div>
+        <section class="grid" aria-label="Schools">
+          <!-- 1) Peters School of Business -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Peters School of Business</div>
+              <div class="school-img-wrap"><img class="school-img" src="petersschool.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
+            </div>
+          </div></button></div>
 
-      <!-- 2) Russ Edwards School of Agriculture & Environment -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Russ Edwards School of Agriculture &amp; Environment</div>
-          <div class="school-img-wrap"><img class="school-img" src="russedwards.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="trevor.png" alt=""><div class="coach-name">Trevor</div>
-        </div>
-      </div></button></div>
+          <!-- 2) Russ Edwards School of Agriculture & Environment -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Russ Edwards School of Agriculture &amp; Environment</div>
+              <div class="school-img-wrap"><img class="school-img" src="russedwards.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="trevor.png" alt=""><div class="coach-name">Trevor</div>
+            </div>
+          </div></button></div>
 
-      <!-- 3) Manitoba Institute of Culinary Arts -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Manitoba Institute of Culinary Arts</div>
-          <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
-        </div>
-      </div></button></div>
+          <!-- 3) Manitoba Institute of Culinary Arts -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Manitoba Institute of Culinary Arts</div>
+              <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
+            </div>
+          </div></button></div>
 
-      <!-- 4) Nursing -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Nursing</div>
-          <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="trevor.png" alt=""><div class="coach-name">Trevor</div>
-        </div>
-      </div></button></div>
+          <!-- 4) Nursing -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Nursing</div>
+              <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="trevor.png" alt=""><div class="coach-name">Trevor</div>
+            </div>
+          </div></button></div>
 
-      <!-- 5) Trades -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Trades</div>
-          <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
-        </div>
-      </div></button></div>
+          <!-- 5) Trades -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Trades</div>
+              <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
+            </div>
+          </div></button></div>
 
-      <!-- 6) Health and Human Services -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Health and Human Services</div>
-          <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="trevor.png" alt=""><div class="coach-name">Trevor</div>
-        </div>
-      </div></button></div>
+          <!-- 6) Health and Human Services -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Health and Human Services</div>
+              <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="trevor.png" alt=""><div class="coach-name">Trevor</div>
+            </div>
+          </div></button></div>
 
-      <!-- 7) Horticulture -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Horticulture</div>
-          <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
-        </div>
-      </div></button></div>
+          <!-- 7) Horticulture -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Horticulture</div>
+              <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
+            </div>
+          </div></button></div>
 
-      <!-- 8) Mechatronics -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Mechatronics</div>
-          <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
-        </div>
-      </div></button></div>
+          <!-- 8) Mechatronics -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Mechatronics</div>
+              <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
+            </div>
+          </div></button></div>
 
-      <!-- 9) Centre for Adult Learning -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Centre for Adult Learning</div>
-          <div class="school-img-wrap"><img class="school-img" src="schools/other.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <div class="coach-name">Not sure? Just ask us!</div>
-        </div>
-      </div></button></div>
+          <!-- 9) Centre for Adult Learning -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Centre for Adult Learning</div>
+              <div class="school-img-wrap"><img class="school-img" src="schools/other.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <div class="coach-name">Not sure? Just ask us!</div>
+            </div>
+          </div></button></div>
 
-      <!-- 10) Continuing Studies -->
-      <div class="card"><button aria-pressed="false"><div class="card-inner">
-        <div class="face front">
-          <div class="school-name">Continuing Studies</div>
-          <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
-        </div>
-        <div class="face back">
-          <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
-        </div>
-      </div></button></div>
-    </section>
+          <!-- 10) Continuing Studies -->
+          <div class="card"><button aria-pressed="false"><div class="card-inner">
+            <div class="face front">
+              <div class="school-name">Continuing Studies</div>
+              <div class="school-img-wrap"><img class="school-img" src="assiniboine.png" alt=""></div>
+            </div>
+            <div class="face back">
+              <img class="coach-img" src="Mitchell.png" alt=""><div class="coach-name">Mitchell</div>
+            </div>
+          </div></button></div>
+        </section>
 
-    <footer>Tip: Click a card to reveal your coach (or a quick message) for that school.</footer>
+        <footer>Tip: Click a card to reveal your coach (or a quick message) for that school.</footer>
+      </div>
+    </div>
   </div>
 
   <script>
+    // Flip on click / keyboard
     function toggleFlip(btn){ const on = btn.getAttribute('aria-pressed')==='true'; btn.setAttribute('aria-pressed', String(!on)); }
     document.querySelectorAll('.card > button').forEach(btn=>{
       btn.addEventListener('click', ()=>toggleFlip(btn));
