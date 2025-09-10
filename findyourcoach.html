@@ -56,7 +56,47 @@
     .coach-name { font-weight: 800; margin-top: 8px; font-size: 1rem; }
 
     footer { margin-top: 18px; font-size: .9rem; color: var(--muted); text-align: center; }
+    .embed .wrap { width: 960px; max-width: none; padding: 8px; margin: 0 auto; }
+.embed header, .embed footer { display: none !important; }  /* hide big header/footer */
+.embed .grid {
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 10px !important;
+  margin-top: 0 !important;
+}
+
+.embed .card { height: 200px !important; }
+
+.embed .school-name {
+  font-size: .95rem;
+  min-height: 2.2em;
+  display: flex; align-items: center;
+}
+.embed .school-img-wrap {
+  flex: 0 0 70px;
+  display: flex; align-items: center; justify-content: center;
+}
+.embed .school-img {
+  max-width: 80%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.embed .coach-img {
+  width: 58%;
+  max-height: 120px;
+  height: auto;
+}
+.embed .coach-name { font-size: .95rem; margin-top: 6px; }
   </style>
+  <script>
+    (function () {
+      const p = new URLSearchParams(location.search);
+      if (p.get('embed') === '1') {
+        document.documentElement.classList.add('embed');
+        document.body.classList.add('embed');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="wrap">
