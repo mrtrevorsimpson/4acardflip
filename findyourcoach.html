@@ -31,7 +31,7 @@
     @media (max-width: 420px)  { .grid { grid-template-columns: 1fr; } }
 
     /* Flip cards (light theme) */
-    .card { position: relative; height: 300px; perspective: 1100px; isolation: isolate; }
+    .card { position: relative; height: 225px; perspective: 1100px; isolation: isolate; }
     .card > button { all: unset; position: absolute; inset: 0; cursor: pointer; outline: none; border-radius: 14px; display: block; }
     .card-inner { position: absolute; inset: 0; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.8,.2,1); }
     .card > button[aria-pressed="true"] .card-inner { transform: rotateY(180deg); }
@@ -52,7 +52,7 @@
 
     /* BACK: coach photo centered, name beneath (or a message) */
     .back { transform: rotateY(180deg); text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    .coach-img { width: 68%; height: 68%; max-width: 220px; max-height: 220px; object-fit: cover; border-radius: 10px; margin: auto; border: 1px solid var(--border); }
+    .coach-img { width: 60%; height: auto; max-width: 220px; max-height: 140px; object-fit: cover; border-radius: 10px; margin: auto; border: 1px solid var(--border); }
     .coach-name { font-weight: 800; margin-top: 8px; font-size: 1rem; }
 
     footer { margin-top: 18px; font-size: .9rem; color: var(--muted); text-align: center; }
@@ -200,11 +200,13 @@
           <div class="face front">
             <div class="school-name">Centre for Adult Learning</div>
             <div class="school-img-wrap">
-              <img class="school-img" src="schools/other.png" alt="Centre for Adult Learning" onerror="this.style.display='none'">
+              <img class="school-img" src="assiniboine.png" alt="Centre for Adult Learning" onerror="this.style.display='none'">
             </div>
           </div>
           <div class="face back">
-            <div class="coach-name">Not sure? Just ask us!</div>
+            <div class="coach-name">Trevor</div>
+            <img class="coach-img" src="trevor.png" alt="Coach Trevor" onerror="this.style.display='none'">
+            <div class="coach-name">Trevor</div>
           </div>
         </div>
       </button></div>
