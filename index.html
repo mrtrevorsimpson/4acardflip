@@ -3,58 +3,58 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>4As Lesson Plan – Flip Card Review</title>
+  <title>4As Lesson Plan — Flip Card Review</title>
   <style>
-    :root {
-      --bg: #0f172a;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
+    :root { --bg:#0f172a; --text:#e5e7eb; --muted:#94a3b8; }
+    html, body { height:100%; margin:0; background:radial-gradient(1200px 800px at 80% -10%, #1e293b, var(--bg)); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"; }
+    .wrap { max-width:1100px; margin:0 auto; padding:1rem clamp(1rem,3vw,2rem) 2rem; }
+    header { display:grid; gap:.5rem; margin-bottom:1rem; }
+    h1 { margin:0; font-size:clamp(1.25rem,1rem + 1.5vw,2rem); letter-spacing:.3px; }
+    .controls { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; justify-content:space-between; background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)); border:1px solid rgba(148,163,184,.2); padding:.6rem .7rem; border-radius:.8rem; }
+    .btn { appearance:none; border:1px solid rgba(148,163,184,.35); background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.05)); color:var(--text); padding:.55rem .8rem; border-radius:.6rem; font-weight:600; letter-spacing:.2px; cursor:pointer; transition:transform .06s ease,border-color .2s ease,background .2s ease; }
+    .btn:hover { transform:translateY(-1px); border-color:rgba(148,163,184,.6); }
+    .btn:active { transform:translateY(0); }
+    .meter { font-size:.95rem; color:var(--muted); }
+
+    /* Grid */
+    .grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1rem; margin-top:1rem; }
+    @media (max-width:1100px){ .grid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:720px){ .grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:480px){ .grid{ grid-template-columns:1fr; } }
+
+    /* Flip card – equal-sized faces */
+    .card { position:relative; perspective:1100px; height:380px; }
+    .card > button { all:unset; position:absolute; inset:0; cursor:pointer; outline:none; border-radius:16px; }
+    .card-inner { position:absolute; inset:0; width:100%; height:100%; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+    .card > button[aria-pressed="true"] .card-inner { transform:rotateY(180deg); }
+
+    .face {
+      position:absolute; inset:0; width:100%; height:100%;
+      display:flex; flex-direction:column; align-items:stretch; gap:.5rem;
+      backface-visibility:hidden; border-radius:16px; padding:1rem; box-sizing:border-box;
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+      border:1px solid rgba(148,163,184,.22); box-shadow:0 10px 30px rgba(0,0,0,.25);
+      overflow:hidden;
     }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: radial-gradient(1200px 800px at 80% -10%, #1e293b, var(--bg));
-      color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    /* Front */
+    .front { position:relative; }
+    .front .title { font-weight:800; font-size:1.05rem; z-index:2; align-self:flex-start; }
+    .front .watermark {
+      position:absolute; right:12px; bottom:12px; width:160px; height:160px;
+      object-fit:contain; opacity:.3; pointer-events:none; z-index:1;
     }
 
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 1rem clamp(1rem, 3vw, 2rem) 2rem; }
+    /* Back – scrollable content, same face size */
+    .back { transform:rotateY(180deg); font-size:.92rem; line-height:1.4; }
+    .back .content { overflow-y:auto; min-height:0; flex:1; -webkit-overflow-scrolling:touch; padding-right:.25rem; }
 
-    header { display: grid; gap: .5rem; margin-bottom: 1rem; }
-    h1 { margin: 0; font-size: clamp(1.25rem, 1rem + 1.5vw, 2rem); letter-spacing: .3px; }
+    /* Better wrapping */
+    .face * { overflow-wrap:anywhere; }
 
-    .controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border: 1px solid rgba(148,163,184,.2); padding: .6rem .7rem; border-radius: .8rem; }
-    .btn { appearance: none; border: 1px solid rgba(148,163,184,.35); background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05)); color: var(--text); padding: .55rem .8rem; border-radius: .6rem; font-weight: 600; letter-spacing: .2px; cursor: pointer; transition: transform .06s ease, border-color .2s ease, background .2s ease; }
-    .btn:hover { transform: translateY(-1px); border-color: rgba(148,163,184,.6); }
-    .btn:active { transform: translateY(0); }
-    .meter { font-size: .95rem; color: var(--muted); }
-
-    /* Card grid */
-    .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
-    @media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    @media (max-width: 720px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
-
-    /* Flip card */
-    .card { position: relative; perspective: 1100px; height: 380px; }
-    .card > button { all: unset; position: absolute; inset: 0; cursor: pointer; outline: none; border-radius: 16px; }
-    .card-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.8,.2,1); width: 100%; height: 100%; }
-    .card > button[aria-pressed="true"] .card-inner { transform: rotateY(180deg); }
-
-    .face { position: absolute; inset: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: stretch; gap: .5rem; backface-visibility: hidden; border-radius: 16px; padding: 1rem; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid rgba(148,163,184,.22); box-shadow: 0 10px 30px rgba(0,0,0,.25); overflow: hidden; }
-
-    /* Front content: bold text + watermark image */
-    .front .title { font-weight: 800; font-size: 1.15rem; z-index: 2; }
-    .front .watermark { position: absolute; right: -8px; bottom: -8px; width: 120px; height: 120px; object-fit: contain; opacity: .3; pointer-events: none; z-index: 1; }
-
-    .back { transform: rotateY(180deg); font-size: .92rem; line-height: 1.4; }
-    .back .content { overflow-y: auto; flex: 1; padding-right: .25rem; }
-
-    ul { margin: .25rem 0 0 1rem; padding: 0; }
-    li { margin: .25rem 0; }
-
-    footer { margin-top: 1rem; font-size: .85rem; color: var(--muted); text-align: center; }
+    ul{ margin:.25rem 0 0 1rem; padding:0; }
+    li{ margin:.25rem 0; }
+    footer{ margin-top:1rem; font-size:.85rem; color:var(--muted); text-align:center; }
   </style>
 </head>
 <body>
@@ -72,130 +72,120 @@
     </header>
 
     <section class="grid" id="cardGrid" aria-label="Flip cards">
-      <!-- Card 1: Overview -->
-      <div class="card" data-key="overview">
-        <button aria-pressed="false"><div class="card-inner">
-          <div class="face front">
-            <div class="title"><strong>The 4As Lesson Plan</strong></div>
-            <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'" />
-          </div>
-          <div class="face back"><div class="content">
-            A structured lesson framework that boosts engagement and learning through four stages:
-            <ul>
-              <li>Activate – connect to prior knowledge or real-world experiences.</li>
-              <li>Acquire – present new information through varied strategies.</li>
-              <li>Apply – provide practice to reinforce learning.</li>
-              <li>Assess – evaluate understanding and provide feedback.</li>
-            </ul>
-            Particularly helpful for instructors transitioning from industry.
-          </div></div>
-        </div></button>
-      </div>
+      <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
+        <div class="face front">
+          <div class="title"><strong>The 4As Lesson Plan</strong></div>
+          <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="face back"><div class="content">
+          A structured lesson framework that boosts engagement and learning through four stages:
+          <ul>
+            <li>Activate – connect to prior knowledge or real-world experiences.</li>
+            <li>Acquire – present new information through varied strategies.</li>
+            <li>Apply – provide practice to reinforce learning.</li>
+            <li>Assess – evaluate understanding and provide feedback.</li>
+          </ul>
+          Particularly helpful for instructors transitioning from industry: clear structure with flexibility.
+        </div></div>
+      </div></button></div>
 
-      <!-- Card 2: Activate -->
-      <div class="card" data-key="activate">
-        <button aria-pressed="false"><div class="card-inner">
-          <div class="face front">
-            <div class="title"><strong>Activate — Engage & Connect</strong></div>
-            <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'" />
-          </div>
-          <div class="face back"><div class="content">
-            Objective: Stimulate interest and link new content to students’ prior knowledge.
-            <ul>
-              <li>Start with a question, scenario, or discussion.</li>
-              <li>Use a case study, video, or demonstration.</li>
-              <li>Encourage students to share what they know.</li>
-            </ul>
-          </div></div>
-        </div></button>
-      </div>
+      <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
+        <div class="face front">
+          <div class="title"><strong>Activate — Engage & Connect</strong></div>
+          <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="face back"><div class="content">
+          Objective: Stimulate interest and link new content to students’ prior knowledge or experiences.
+          <ul>
+            <li>Start with a question, scenario, or discussion related to their field.</li>
+            <li>Use a short case study, video, or hands-on demonstration.</li>
+            <li>Invite students to share what they already know or think.</li>
+          </ul>
+          Example: “What challenges have you encountered when working with copper pipes?”
+        </div></div>
+      </div></button></div>
 
-      <!-- Card 3: Acquire -->
-      <div class="card" data-key="acquire">
-        <button aria-pressed="false"><div class="card-inner">
-          <div class="face front">
-            <div class="title"><strong>Acquire — Teach New Concepts</strong></div>
-            <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'" />
-          </div>
-          <div class="face back"><div class="content">
-            Objective: Present new content in a structured way.
-            <ul>
-              <li>Use lectures, demonstrations, multimedia.</li>
-              <li>Break down complex concepts.</li>
-              <li>Use visuals and real-world examples.</li>
-              <li>Encourage engagement via discussion.</li>
-            </ul>
-          </div></div>
-        </div></button>
-      </div>
+      <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
+        <div class="face front">
+          <div class="title"><strong>Acquire — Teach New Concepts</strong></div>
+          <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="face back"><div class="content">
+          Objective: Present new content in a structured and meaningful way.
+          <ul>
+            <li>Use multiple methods (lecture, demonstration, multimedia, guided practice).</li>
+            <li>Break down complex concepts into manageable chunks.</li>
+            <li>Use visuals, diagrams, and real-world examples.</li>
+            <li>Encourage engagement via guided questioning or small-group discussion.</li>
+          </ul>
+          Example: Demonstrate soldering a copper pipe and explain each step.
+        </div></div>
+      </div></button></div>
 
-      <!-- Card 4: Apply -->
-      <div class="card" data-key="apply">
-        <button aria-pressed="false"><div class="card-inner">
-          <div class="face front">
-            <div class="title"><strong>Apply — Practice & Reinforce</strong></div>
-            <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'" />
-          </div>
-          <div class="face back"><div class="content">
-            Objective: Allow students to practice skills meaningfully.
-            <ul>
-              <li>Assign hands-on tasks or case studies.</li>
-              <li>Use collaboration.</li>
-              <li>Offer scaffolded guidance.</li>
-            </ul>
-          </div></div>
-        </div></button>
-      </div>
+      <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
+        <div class="face front">
+          <div class="title"><strong>Apply — Practice & Reinforce</strong></div>
+          <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="face back"><div class="content">
+          Objective: Allow students to practice skills or apply knowledge in a meaningful way.
+          <ul>
+            <li>Assign hands-on activities, problem-solving tasks, or case studies.</li>
+            <li>Use peer collaboration (pairs, groups).</li>
+            <li>Offer scaffolded guidance (start guided, move to independent).</li>
+          </ul>
+          Example: Students practice soldering—first guided, then independently.
+        </div></div>
+      </div></button></div>
 
-      <!-- Card 5: Assess -->
-      <div class="card" data-key="assess">
-        <button aria-pressed="false"><div class="card-inner">
-          <div class="face front">
-            <div class="title"><strong>Assess — Evaluate & Provide Feedback</strong></div>
-            <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'" />
-          </div>
-          <div class="face back"><div class="content">
-            Objective: Measure student understanding and provide feedback.
-            <ul>
-              <li>Use formative checks.</li>
-              <li>Give timely feedback.</li>
-              <li>Adjust instruction as needed.</li>
-            </ul>
-          </div></div>
-        </div></button>
-      </div>
+      <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
+        <div class="face front">
+          <div class="title"><strong>Assess — Evaluate & Provide Feedback</strong></div>
+          <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="face back"><div class="content">
+          Objective: Measure student understanding and provide constructive feedback.
+          <ul>
+            <li>Use formative checks (quick quizzes, discussions, demonstrations).</li>
+            <li>Provide timely, specific feedback.</li>
+            <li>Adjust instruction based on results.</li>
+          </ul>
+          Example: Observe soldering work, give feedback, discuss common mistakes & improvements.
+        </div></div>
+      </div></button></div>
     </section>
 
     <footer>Tips: Be student-centered • Use active learning • Be flexible • Encourage reflection.</footer>
   </div>
 
   <script>
-    function updateProgress() {
-      const cards = document.querySelectorAll('.card > button');
-      const revealed = Array.from(cards).filter(btn => btn.getAttribute('aria-pressed') === 'true').length;
-      document.getElementById('progress').textContent = revealed;
+    function updateProgress(){
+      const cards=document.querySelectorAll('.card > button');
+      const revealed=[...cards].filter(btn=>btn.getAttribute('aria-pressed')==='true').length;
+      document.getElementById('progress').textContent=revealed;
     }
-    function toggleFlip(btn) {
-      const pressed = btn.getAttribute('aria-pressed') === 'true';
-      btn.setAttribute('aria-pressed', String(!pressed));
+    function toggleFlip(btn){
+      const pressed=btn.getAttribute('aria-pressed')==='true';
+      btn.setAttribute('aria-pressed',String(!pressed));
       updateProgress();
     }
-    document.querySelectorAll('.card > button').forEach(btn => {
-      btn.addEventListener('click', () => toggleFlip(btn));
-      btn.addEventListener('keydown', e => {
-        if (e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleFlip(btn);} });
+    document.querySelectorAll('.card > button').forEach(btn=>{
+      btn.addEventListener('click',()=>toggleFlip(btn));
+      btn.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleFlip(btn); }
+      });
     });
-    document.getElementById('shuffleBtn').addEventListener('click', () => {
+    document.getElementById('shuffleBtn').addEventListener('click',()=>{
       const grid=document.getElementById('cardGrid');
-      const items=Array.from(grid.children);
-      for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));grid.insertBefore(items[j],items[i].nextSibling);[items[i],items[j]]=[items[j],items[i]];}
+      const items=[...grid.children];
+      for(let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); grid.insertBefore(items[j],items[i].nextSibling); [items[i],items[j]]=[items[j],items[i]]; }
     });
-    document.getElementById('resetBtn').addEventListener('click', () => {
-      document.querySelectorAll('.card > button').forEach(btn => btn.setAttribute('aria-pressed','false'));
+    document.getElementById('resetBtn').addEventListener('click',()=>{
+      document.querySelectorAll('.card > button').forEach(btn=>btn.setAttribute('aria-pressed','false'));
       updateProgress();
     });
-    document.getElementById('revealAllBtn').addEventListener('click', () => {
-      document.querySelectorAll('.card > button').forEach(btn => btn.setAttribute('aria-pressed','true'));
+    document.getElementById('revealAllBtn').addEventListener('click',()=>{
+      document.querySelectorAll('.card > button').forEach(btn=>btn.setAttribute('aria-pressed','true'));
       updateProgress();
     });
     updateProgress();
