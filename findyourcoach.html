@@ -46,9 +46,10 @@
 
     /* FRONT: school name + image */
     .front { justify-content: space-between; }
-    .school-name { font-weight: 800; font-size: 1.02rem; line-height: 1.25; }
-    .school-img-wrap { display: flex; justify-content: center; align-items: center; flex: 1; }
-    .school-img { max-width: 80%; max-height: 120px; object-fit: contain; display: block; margin: auto; }
+    .school-name { font-weight: 800; font-size: 1.02rem; line-height: 1.25; min-height: 2.6em; display: flex; align-items:center; }
+    .school-img-wrap {flex:0 0 120px; display: flex; align-items:center;
+  justify-content:center;}
+    .school-img {display:block; max-width: 90%; max-height: 100%; object-fit: contain; margin: auto; }
 
     /* BACK: coach photo centered, name beneath (or a message) */
     .back { transform: rotateY(180deg); text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
