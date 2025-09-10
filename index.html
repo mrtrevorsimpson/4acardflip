@@ -16,16 +16,16 @@
     .btn:active { transform:translateY(0); }
     .meter { font-size:.95rem; color:var(--muted); }
 
-    /* Grid: fewer columns + bigger gap to prevent overlap/tight layouts */
-    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.25rem; margin-top:1rem; align-items:start; }
-    @media (max-width:1200px){ .grid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
-    @media (max-width:900px) { .grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media (max-width:600px) { .grid{ grid-template-columns:1fr; } }
+    /* Grid (default site view) */
+    .grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1rem; margin-top:1rem; align-items:start; }
+    @media (max-width:1100px){ .grid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:720px){ .grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:480px){ .grid{ grid-template-columns:1fr; } }
 
     /* Flip card – equal-sized faces */
     .card { position:relative; perspective:1100px; height:380px; isolation:isolate; }
-    .card > button { all:unset; position:absolute; inset:0; cursor:pointer; outline:none; border-radius:16px; display:block; }
-    .card-inner { position:absolute; inset:0; width:100%; height:100%; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.2,.8,.2,1); }
+    .card > button { all:unset; display:block; width:100%; height:100%; cursor:pointer; outline:none; border-radius:16px; }
+    .card-inner { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.2,.8,.2,1); }
     .card > button[aria-pressed="true"] .card-inner { transform:rotateY(180deg); }
 
     .face {
@@ -38,44 +38,46 @@
     }
 
     /* Front */
-    .front { position:relative; }
+    .front { position:relative; justify-content:space-between; }
     .front .title { font-weight:800; font-size:1.05rem; z-index:2; align-self:flex-start; }
-    /* Center the image at the bottom */
+    /* centered at bottom */
     .front .watermark {
-      position:absolute; left:50%; bottom:12px; transform:translateX(-50%);
+      position:relative; margin-top:auto; align-self:center;
       width:160px; height:160px; object-fit:contain; opacity:.3; pointer-events:none; z-index:1;
     }
 
-    /* Back – scrollable content */
+    /* Back */
     .back { transform:rotateY(180deg); font-size:.92rem; line-height:1.4; }
     .back .content { overflow-y:auto; min-height:0; flex:1; -webkit-overflow-scrolling:touch; padding-right:.25rem; }
 
-    /* Better wrapping */
     .face * { overflow-wrap:anywhere; }
 
     ul{ margin:.25rem 0 0 1rem; padding:0; }
     li{ margin:.25rem 0; }
     footer{ margin-top:1rem; font-size:.85rem; color:var(--muted); text-align:center; }
-    /* --- EMBED MODE --- */
-.embed .wrap { max-width: 1100px; padding: 8px 8px 10px; }
-.embed header, .embed footer { display: none !important; }
-.embed .grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-  margin-top: 0 !important;
-}
-.embed .card { height: 380px !important; }
 
-  </style>
-  <script>
-  (function () {
-    const params = new URLSearchParams(location.search);
-    if (params.get('embed') === '1') {
-      document.documentElement.classList.add('embed');
-      document.body?.classList?.add('embed');
+    /* ---------- EMBED MODE: force exactly 5 across, fixed width ---------- */
+    .embed .wrap { width:1120px; max-width:none; padding:8px; margin:0 auto; }
+    .embed header, .embed footer { display:none !important; }
+    .embed .grid {
+      grid-template-columns: repeat(5, 1fr) !important;
+      gap:12px !important;
+      margin-top:0 !important;
     }
-  })();
-</script>
+    /* optional: reduce card height a touch if you want a shorter iframe
+       .embed .card { height:360px !important; } */
+  </style>
+
+  <!-- Add 'embed' class when URL has ?embed=1 -->
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      if (params.get('embed') === '1') {
+        document.documentElement.classList.add('embed');
+        document.body?.classList?.add('embed');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="wrap">
@@ -92,86 +94,47 @@
     </header>
 
     <section class="grid" id="cardGrid" aria-label="Flip cards">
+      <!-- Card 1 -->
       <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
         <div class="face front">
           <div class="title"><strong>The 4As Lesson Plan</strong></div>
           <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
         </div>
         <div class="face back"><div class="content">
-          A structured lesson framework that boosts engagement and learning through four stages:
-          <ul>
-            <li>Activate – connect to prior knowledge or real-world experiences.</li>
-            <li>Acquire – present new information through varied strategies.</li>
-            <li>Apply – provide practice to reinforce learning.</li>
-            <li>Assess – evaluate understanding and provide feedback.</li>
-          </ul>
-          Particularly helpful for instructors transitioning from industry: clear structure with flexibility.
+          A structured lesson framework with four stages: Activate, Acquire, Apply, Assess.
         </div></div>
       </div></button></div>
-
+      <!-- Card 2 -->
       <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
         <div class="face front">
           <div class="title"><strong>Activate — Engage & Connect</strong></div>
           <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
         </div>
-        <div class="face back"><div class="content">
-          Objective: Stimulate interest and link new content to students’ prior knowledge or experiences.
-          <ul>
-            <li>Start with a question, scenario, or discussion related to their field.</li>
-            <li>Use a short case study, video, or hands-on demonstration.</li>
-            <li>Invite students to share what they already know or think.</li>
-          </ul>
-          Example: “What challenges have you encountered when working with copper pipes?”
-        </div></div>
+        <div class="face back"><div class="content">Objective: Stimulate interest and link to prior knowledge.</div></div>
       </div></button></div>
-
+      <!-- Card 3 -->
       <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
         <div class="face front">
           <div class="title"><strong>Acquire — Teach New Concepts</strong></div>
           <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
         </div>
-        <div class="face back"><div class="content">
-          Objective: Present new content in a structured and meaningful way.
-          <ul>
-            <li>Use multiple methods (lecture, demonstration, multimedia, guided practice).</li>
-            <li>Break down complex concepts into manageable chunks.</li>
-            <li>Use visuals, diagrams, and real-world examples.</li>
-            <li>Encourage engagement via guided questioning or small-group discussion.</li>
-          </ul>
-          Example: Demonstrate soldering a copper pipe and explain each step.
-        </div></div>
+        <div class="face back"><div class="content">Objective: Present new content in a structured way.</div></div>
       </div></button></div>
-
+      <!-- Card 4 -->
       <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
         <div class="face front">
           <div class="title"><strong>Apply — Practice & Reinforce</strong></div>
           <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
         </div>
-        <div class="face back"><div class="content">
-          Objective: Allow students to practice skills or apply knowledge in a meaningful way.
-          <ul>
-            <li>Assign hands-on activities, problem-solving tasks, or case studies.</li>
-            <li>Use peer collaboration (pairs, groups).</li>
-            <li>Offer scaffolded guidance (start guided, move to independent).</li>
-          </ul>
-          Example: Students practice soldering—first guided, then independently.
-        </div></div>
+        <div class="face back"><div class="content">Objective: Allow students to practice skills.</div></div>
       </div></button></div>
-
+      <!-- Card 5 -->
       <div class="card"><button aria-pressed="false" aria-label="Flip card"><div class="card-inner">
         <div class="face front">
           <div class="title"><strong>Assess — Evaluate & Provide Feedback</strong></div>
           <img class="watermark" src="GettingStarted.png" alt="" onerror="this.style.display='none'">
         </div>
-        <div class="face back"><div class="content">
-          Objective: Measure student understanding and provide constructive feedback.
-          <ul>
-            <li>Use formative checks (quick quizzes, discussions, demonstrations).</li>
-            <li>Provide timely, specific feedback.</li>
-            <li>Adjust instruction based on results.</li>
-          </ul>
-          Example: Observe soldering work, give feedback, discuss common mistakes & improvements.
-        </div></div>
+        <div class="face back"><div class="content">Objective: Measure understanding and give feedback.</div></div>
       </div></button></div>
     </section>
 
@@ -179,37 +142,13 @@
   </div>
 
   <script>
-    function updateProgress(){
-      const cards=document.querySelectorAll('.card > button');
-      const revealed=[...cards].filter(btn=>btn.getAttribute('aria-pressed')==='true').length;
-      document.getElementById('progress').textContent=revealed;
-    }
-    function toggleFlip(btn){
-      const pressed=btn.getAttribute('aria-pressed')==='true';
-      btn.setAttribute('aria-pressed',String(!pressed));
-      updateProgress();
-    }
-    document.querySelectorAll('.card > button').forEach(btn=>{
-      btn.addEventListener('click',()=>toggleFlip(btn));
-      btn.addEventListener('keydown',e=>{
-        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleFlip(btn); }
-      });
-    });
-    document.getElementById('shuffleBtn').addEventListener('click',()=>{
-      const grid=document.getElementById('cardGrid');
-      const items=[...grid.children];
-      for(let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); grid.insertBefore(items[j],items[i].nextSibling); [items[i],items[j]]=[items[j],items[i]]; }
-    });
-    document.getElementById('resetBtn').addEventListener('click',()=>{
-      document.querySelectorAll('.card > button').forEach(btn=>btn.setAttribute('aria-pressed','false'));
-      updateProgress();
-    });
-    document.getElementById('revealAllBtn').addEventListener('click',()=>{
-      document.querySelectorAll('.card > button').forEach(btn=>btn.setAttribute('aria-pressed','true'));
-      updateProgress();
-    });
+    function updateProgress(){const cards=document.querySelectorAll('.card > button');const revealed=[...cards].filter(btn=>btn.getAttribute('aria-pressed')==='true').length;document.getElementById('progress').textContent=revealed;}
+    function toggleFlip(btn){const pressed=btn.getAttribute('aria-pressed')==='true';btn.setAttribute('aria-pressed',String(!pressed));updateProgress();}
+    document.querySelectorAll('.card > button').forEach(btn=>{btn.addEventListener('click',()=>toggleFlip(btn));btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleFlip(btn);}});});
+    document.getElementById('shuffleBtn').addEventListener('click',()=>{const grid=document.getElementById('cardGrid');const items=[...grid.children];for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));grid.insertBefore(items[j],items[i].nextSibling);[items[i],items[j]]=[items[j],items[i]];}});
+    document.getElementById('resetBtn').addEventListener('click',()=>{document.querySelectorAll('.card > button').forEach(btn=>btn.setAttribute('aria-pressed','false'));updateProgress();});
+    document.getElementById('revealAllBtn').addEventListener('click',()=>{document.querySelectorAll('.card > button').forEach(btn=>btn.setAttribute('aria-pressed','true'));updateProgress();});
     updateProgress();
   </script>
 </body>
 </html>
-
