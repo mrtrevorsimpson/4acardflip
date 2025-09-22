@@ -5,62 +5,47 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Assiniboine College • Teaching & Learning Jeopardy</title>
 <style>
-  /* -------------------- Theme Tokens -------------------- */
+  /* ===================== Accessibility-first Theme ===================== */
   :root{
-    --brand-primary:#9b1b55; /* magenta from logo */
-    --brand-accent:#3a225d;  /* deep purple from logo */
-    --bg:#2b2b2f;            /* CHANGED: dark gray canvas behind cards */
-    --panel:#ffffff;
-    --text:#f2f2f5;          /* CHANGED: lighter text on dark bg */
-    --muted:#bdbdc7;
-    --good:#2bc06d;
-    --bad:#ff5869;
-    --tile:#0f1d3f;          /* Jeopardy-like deep blue */
-    --tileText:#ffffff;
-    --focus:#1e90ff;
-    --shadow:0 6px 20px rgba(0,0,0,.35);
-  }
-  .contrast, .contrast :root{
-    --bg:#000; --panel:#0f0f13; --text:#fff; --muted:#d6d6de; --tile:#000; --tileText:#fff;
-  }
-<script>
-/* Auto-resize messenger for LMS iframes (Moodle) */
-(function () {
-  function sendHeight() {
-    try {
-      var h = Math.max(
-        document.documentElement.scrollHeight,
-        document.body.scrollHeight,
-        document.documentElement.offsetHeight,
-        document.body.offsetHeight
-      );
-      parent.postMessage({ type: 'jeopardy-size', height: h }, '*');
-    } catch (e) { /* in same-origin errors, just ignore */ }
-  }
-  // Send on load, on resize, and whenever content/layout changes
-  window.addEventListener('load', sendHeight);
-  window.addEventListener('resize', sendHeight);
-  if ('ResizeObserver' in window) {
-    var ro = new ResizeObserver(sendHeight);
-    ro.observe(document.documentElement);
-    ro.observe(document.body);
-  } else {
-    // Fallback: ping occasionally (lightweight)
-    setInterval(sendHeight, 1000);
-  }
-  // Also allow parent to request a re-measure
-  window.addEventListener('message', function (e) {
-    if (e && e.data && e.data.type === 'jeopardy-ping') sendHeight();
-  });
-})();
-</script>
+    /* Brand (kept), but signals use colour-blind-safe tokens below */
+    --brand-primary:#9b1b55; /* magenta */
+    --brand-accent:#3a225d;  /* deep purple */
 
-  /* -------------------- Base Layout -------------------- */
-  html,body{height:100%}
+    /* Canvas & text (dark mode background for board) */
+    --bg:#2b2b2f;
+    --text:#f5f7fb;     /* brighter for contrast */
+    --muted:#c8c9d1;
+
+    /* Board tiles */
+    --tile:#0a1b3a;
+    --tileText:#ffffff;
+
+    /* Focus outline */
+    --focus:#ffbf00;    /* yellow works on dark/light */
+
+    /* Shadows */
+    --shadow:0 6px 20px rgba(0,0,0,.35);
+
+    /* Outcome signals (colour-blind safe) */
+    --ok:#1976d2;       /* blue */
+    --warn:#ef6c00;     /* orange */
+    --ok-bg:#e3f2fd;    /* pale blue */
+    --warn-bg:#fff3e0;  /* pale orange */
+  }
+
+  /* High contrast toggle (kept) */
+  .contrast, .contrast :root{
+    --bg:#000; --text:#fff; --muted:#d6d6de; --tile:#000; --tileText:#fff;
+  }
+
+  /* ===================== Base Layout ===================== */
+  html,body{height:auto}
   body{
     margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial;
     background:var(--bg); color:var(--text); display:flex; flex-direction:column;
   }
+
+  /* Header stays light to keep identity crisp */
   header{
     display:flex; align-items:center; gap:16px; padding:12px 16px;
     background:#ffffff; color:#15151a; box-shadow:var(--shadow);
@@ -81,27 +66,28 @@
   button:focus{outline:3px solid var(--focus); outline-offset:2px}
   .pill{background:#ececf3; color:#333; padding:6px 10px; border-radius:999px; font-size:12px}
 
-  main{width:min(1200px,95vw); margin:18px auto; display:grid; gap:16px}
+  main{width:min(1200px,100%); margin:18px auto; display:grid; gap:16px}
 
-  /* -------------------- Score Bar (single row) -------------------- */
+  /* ===================== One-line Score Bar ===================== */
   .scorebar{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-    align-items:center; width:100%;
     background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
     border-radius:14px; padding:8px;
   }
   .team{
     display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center;
-    background:transparent; box-shadow:none; color:var(--text);
   }
-  .team label{opacity:.9}
+  .team label{opacity:.95}
   .team input{
-    width:100%; min-width:0; padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.18);
-    background:#121217; color:#fff;
+    width:100%; min-width:0; padding:8px 10px; border-radius:10px;
+    border:1px solid rgba(255,255,255,.18); background:#121217; color:#fff;
   }
-  .score{font-weight:900; text-align:right; padding:6px 8px; background:#121217; border-radius:10px; min-width:72px}
+  .score{
+    font-weight:900; text-align:right; padding:6px 8px; background:#0f0f15;
+    border:1px solid #2a2a35; border-radius:10px; min-width:72px; color:#fff;
+  }
 
-  /* -------------------- Board -------------------- */
+  /* ===================== Board ===================== */
   .board{display:grid; grid-template-columns:repeat(5,1fr); gap:12px}
   .cat{
     background:linear-gradient(135deg,var(--brand-accent), var(--brand-primary));
@@ -115,20 +101,31 @@
     display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:900;
     cursor:pointer; user-select:none; box-shadow:var(--shadow);
   }
-  .tile[aria-disabled="true"]{opacity:.35; pointer-events:none}
-  /* Logo watermark on every tile (80% transparency => 0.2 opacity) */
+  .tile[aria-disabled="true"]{
+    opacity:1; color:#dde2f2; /* keep readable */
+    background:
+      repeating-linear-gradient(
+        45deg, rgba(255,255,255,.09) 0, rgba(255,255,255,.09) 6px,
+        transparent 6px, transparent 12px
+      ),
+      var(--tile);
+  }
+  .tile[aria-disabled="true"]::after{
+    content:"USED"; position:absolute; bottom:6px; right:8px; font-size:12px; letter-spacing:.08em; opacity:.9;
+  }
+
+  /* Logo watermark on every tile (reduced opacity for contrast safety) */
   .tile::before{
     content:""; position:absolute; inset:0; pointer-events:none;
     background-image:url("./assiniboinelogo.png");
-    background-repeat:no-repeat; background-position:center; background-size:70%;
-    opacity:.3; /* CHANGED: ~70% transparency */
-    mix-blend-mode:normal; /* keep readable */
-    filter:grayscale(0.1);
+    background-repeat:no-repeat; background-position:center; background-size:60%;
+    opacity:.18; /* lower than before for readability */
+    mix-blend-mode:normal; filter:grayscale(0.1);
   }
 
   .footer{display:flex; gap:10px; align-items:center; justify-content:space-between; color:var(--muted)}
 
-  /* -------------------- Modal -------------------- */
+  /* ===================== Modal ===================== */
   dialog{ width:min(800px,92vw); border:none; border-radius:16px; padding:0; box-shadow:0 30px 80px rgba(0,0,0,.65); background:#17171d; color:#fff }
   .modal{ padding:18px; display:flex; flex-direction:column; gap:14px }
   .modal header{box-shadow:none; background:transparent; padding:0; display:flex; align-items:center; gap:10px}
@@ -136,11 +133,23 @@
   .question{font-size:20px; font-weight:800}
   .options{display:grid; gap:10px}
   .options button{
-    text-align:left; padding:12px; background:#202028; color:#f1f1f5; border-radius:12px; border:2px solid transparent;
+    min-height:48px;
+    text-align:left; padding:12px; background:#23232b; color:#f5f7fb;
+    border-radius:12px; border:2px solid #3b3b46;
   }
-  .options button:focus{border-color:var(--focus); outline:none}
-  .options button.correct{background:rgba(43,192,109,.16); border-color:var(--good)}
-  .options button.wrong{background:rgba(255,88,105,.16); border-color:var(--bad)}
+  .options button:focus{outline:3px solid var(--focus); outline-offset:2px}
+  .options button.correct{
+    background:var(--ok-bg); border-color:var(--ok); color:#0a2540; position:relative;
+  }
+  .options button.correct::after{
+    content:" ✓ Correct"; font-weight:800; margin-left:6px;
+  }
+  .options button.wrong{
+    background:var(--warn-bg); border-color:var(--warn); color:#3a1a00; position:relative;
+  }
+  .options button.wrong::after{
+    content:" ✕ Incorrect"; font-weight:800; margin-left:6px;
+  }
   .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
   .timer{font-variant-numeric:tabular-nums; font-weight:900}
   .buzzhint{color:#b8b8c7}
@@ -148,15 +157,22 @@
   .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:800; background:#32323b; color:#fff; padding:2px 6px; border-radius:6px}
   .muted{color:var(--muted)}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* Visible focus for everything interactive */
+  :focus-visible { outline:3px solid var(--focus); outline-offset:2px }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce){
+    * { animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition:none !important; }
+  }
 </style>
 </head>
 <body>
   <a class="sr-only" href="#board">Skip to board</a>
 
-  <!-- Header stays light to keep the college identity crisp -->
   <header role="banner">
     <div class="brand">
-      <img src="assiniboine.png" alt="Assiniboine College logo" onerror="this.style.display='none'"/>
+      <img src="./assiniboinelogo.png" alt="Assiniboine College logo"/>
       <div class="title">
         <b>Teaching & Learning Jeopardy</b>
         <small>Assiniboine College — 5×5 board • MCQ • 15s • Buzzers <span class="kbd">1–4</span></small>
@@ -165,14 +181,13 @@
     <div class="actions">
       <span id="hiscore" class="pill" aria-live="polite">All-time high: —</span>
       <button id="contrastBtn" class="ghost" aria-pressed="false" title="Toggle high contrast">High contrast</button>
-      <!-- Removed Manage Content button per request -->
       <button id="resetGameBtn" class="ghost">Reset Game</button>
       <button id="resetScoresBtn">Reset Scores</button>
     </div>
   </header>
 
   <main>
-    <!-- One-line score bar -->
+    <!-- One-line score bar with non-colour team markers -->
     <section class="scorebar" aria-label="Teams and scores">
       <div class="team">
         <label for="t1name">Team 1 <span class="kbd">1</span></label>
@@ -233,9 +248,7 @@
   </dialog>
 
 <script>
-/* ------------------------ Seed Content (edit here) ------------------------ */
-/* You asked to remove the on-page editor. To change questions/categories,
-   edit the DEFAULT_GAME constant below in code. Keep 5 cats × 5 clues. */
+/* ====================== Seed Content (edit in code) ====================== */
 const DEFAULT_GAME = {
   categories: [
     { name: "Bloom's Taxonomy", clues: [
@@ -276,7 +289,7 @@ const DEFAULT_GAME = {
   ]
 };
 
-/* ------------------------------ Game State ------------------------------ */
+/* ============================ Game State ============================ */
 let data = structuredClone(DEFAULT_GAME);
 let used = new Set(); // "catIndex-value"
 let scores = [0,0,0,0];
@@ -286,7 +299,7 @@ let timerId = null, timeLeft = 15;
 let openTile = null; // {ci, qi, value}
 const HISCORE_KEY = "jeopardyHighScoreV1";
 
-/* ----------------------------- Elements ----------------------------- */
+/* ============================ Elements ============================ */
 const boardEl = document.getElementById('board');
 const remainingEl = document.getElementById('remaining');
 const dlg = document.getElementById('qdlg');
@@ -317,7 +330,7 @@ const resetGameBtn = document.getElementById('resetGameBtn');
 const contrastBtn = document.getElementById('contrastBtn');
 const hiscoreEl = document.getElementById('hiscore');
 
-/* --------------------------- Utility helpers --------------------------- */
+/* ============================ Helpers ============================ */
 const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
 function updateRemaining(){
   const total = 25;
@@ -371,7 +384,7 @@ function setScore(team, delta){
   teamScores[team].textContent = scores[team];
 }
 
-/* ----------------------------- Question UI ----------------------------- */
+/* ============================ Question UI ============================ */
 function openQuestion(catIndex, qIndex, value){
   const usedKey = `${catIndex}-${value}`;
   if(used.has(usedKey)) return;
@@ -436,11 +449,12 @@ function openQuestion(catIndex, qIndex, value){
 function updateActiveTeam(){
   activeTeamEl.textContent = activeTeam==null ? "None" : (teamNames[activeTeam].value || `Team ${activeTeam+1}`);
 }
+const teamShapes = ["■","▲","●","◆"]; // non-colour identifiers
 function buzz(teamIdx){
   if(activeTeam!=null) return;
   if(ineligibleThisClue.has(teamIdx)) return;
   activeTeam = teamIdx; updateActiveTeam();
-  qstatus.textContent = `${teamNames[teamIdx].value || `Team ${teamIdx+1}`} buzzed! Choose A–D.`;
+  qstatus.textContent = `${teamNames[teamIdx].value || `Team ${teamIdx+1}`} (${teamShapes[teamIdx]}) buzzed! Choose A–D.`;
 }
 function attemptAnswer(btn){
   if(activeTeam==null){ qstatus.textContent="Buzz first with 1–4."; return; }
@@ -462,7 +476,7 @@ function attemptAnswer(btn){
       lockQuestion("No more teams. Correct: " + revealCorrect());
     }else{
       activeTeam = null; updateActiveTeam();
-      qstatus.textContent = "Wrong. Others may buzz!";
+      qstatus.textContent = "Incorrect. Others may buzz!";
       [...qoptions.children].forEach(b=>{ if(!b.classList.contains('wrong')){ b.disabled=false; } });
     }
   }
@@ -480,7 +494,7 @@ function lockQuestion(message){
   activeTeam=null; updateActiveTeam();
 }
 
-/* ---------------------------- Buttons / Misc ---------------------------- */
+/* ============================ Buttons / Misc ============================ */
 resetScoresBtn.onclick = ()=>{
   scores=[0,0,0,0]; teamScores.forEach((el)=>el.textContent = "0");
 };
@@ -495,10 +509,16 @@ contrastBtn.onclick = ()=>{
   contrastBtn.setAttribute('aria-pressed', String(on));
 };
 
-/* ------------------------------- Init ----------------------------------- */
+/* ============================ Init ============================ */
 function init(){
+  // Add team shape markers to labels (non-colour cues)
+  document.querySelectorAll('.team label').forEach((lbl, i)=> {
+    lbl.setAttribute('data-shape', teamShapes[i] || "");
+  });
+
   drawBoard();
   updateHiscore();
+
   // Global buzzer keys when modal not open
   window.addEventListener('keydown', (e)=>{
     if(!dlg.open && ['1','2','3','4'].includes(e.key)){
@@ -507,6 +527,33 @@ function init(){
   });
 }
 init();
+
+/* =================== Moodle iframe auto-resize helper =================== */
+(function () {
+  function sendHeight() {
+    try {
+      var h = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        document.documentElement.offsetHeight,
+        document.body.offsetHeight
+      );
+      parent.postMessage({ type: 'jeopardy-size', height: h }, '*');
+    } catch (e) { /* ignore */ }
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  if ('ResizeObserver' in window) {
+    var ro = new ResizeObserver(sendHeight);
+    ro.observe(document.documentElement);
+    ro.observe(document.body);
+  } else {
+    setInterval(sendHeight, 1000);
+  }
+  window.addEventListener('message', function (e) {
+    if (e && e.data && e.data.type === 'jeopardy-ping') sendHeight();
+  });
+})();
 </script>
 </body>
 </html>
