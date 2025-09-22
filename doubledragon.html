@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Syllabus Streets – HTML5 Starter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html,body { height:100%; margin:0; background:#0f1220; color:#eaeaea; font-family:system-ui, sans-serif; }
+    #gameWrap { position:relative; width:960px; max-width:100%; margin:24px auto; }
+    #game { width:100%; background:#1b2038; border:2px solid #2a2f50; border-radius:12px; display:block; }
+    #hud { margin:8px 0; display:flex; gap:12px; align-items:center; }
+    .pill { background:#232847; padding:6px 10px; border-radius:999px; font-size:14px; }
+    #pauseCard {
+      position:absolute; inset:0; display:none; place-items:center; backdrop-filter:blur(2px);
+      background:rgba(4,6,14,0.55);
+    }
+    .card {
+      width:min(680px,92%); background:#0e1430; border:1px solid #2b3a78; border-radius:14px; padding:16px 18px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.45);
+    }
+    .card h3 { margin:0 0 8px 0; font-size:18px; }
+    .opts { display:grid; gap:8px; margin-top:10px; }
+    .opts button {
+      text-align:left; background:#131a3d; border:1px solid #3746a5; color:#eaeaea; padding:10px 12px;
+      border-radius:10px; cursor:pointer; font-size:14px;
+    }
+    .opts button:hover { background:#182155; }
+    .meta { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; opacity:.85; margin-top:6px; }
+    #toast {
+      position:absolute; left:50%; top:16px; transform:translateX(-50%); background:#10173a; border:1px solid #2b3a78;
+      padding:8px 12px; border-radius:10px; display:none;
+    }
+    #exportBtn { margin-left:auto; }
+  </style>
+</head>
+<body>
+  <div id="gameWrap">
+    <canvas id="game" width="900" height="520"></canvas>
+    <div id="hud">
+      <span class="pill">HP: <strong id="hp">100</strong></span>
+      <span class="pill">Score: <strong id="score">0</strong></span>
+      <span class="pill">Combo: <strong id="combo">0</strong></span>
+      <button id="exportBtn" class="pill">Export Lesson Plan</button>
+    </div>
+
+    <div id="pauseCard">
+      <div class="card">
+        <h3 id="prompt">Objective → Assessment alignment</h3>
+        <div class="meta" id="tags"></div>
+        <div class="opts" id="options"></div>
+        <div class="meta"><span id="timer">10</span>s to choose</div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+
+  <script>
+  // --- Minimal game state ---
+  const cvs = document.getElementById('game');
+  const ctx = cvs.getContext('2d');
+  const hud = {
+    hp: document.getElementById('hp'),
+    score: document.getElementById('score'),
+    combo: document.getElementById('combo')
+  };
+  const pauseUI = {
+    wrap: document.getElementById('pauseCard'),
+    prompt: document.getElementById('prompt'),
+    options: document.getElementById('options'),
+    tags: document.getElementById('tags'),
+    timer: document.getElementById('timer')
+  };
+  const toast = document.getElementById('toast');
+
+  const keys = new Set();
+  let last = 0, paused = false, showingCard = false, timeLeft = 0, timerId = null;
+
+  // Player & enemies (simple rectangles to start)
+  const player = { x:80, y:400, w:38, h:54, vx:0, speed:200, facing:1, hp:100, ifr:0 };
+  const enemies = [];
+  const gravity = 1200, groundY = 454;
+  const attacks = [];
+
+  // Content: a few example Pause Cards (swap in your real content later)
+  const deck = [
+    {
+      prompt: "Objective is 'Analyze rhetorical strategies in an op-ed'. Pick the fastest assessment that evidences ANALYZE.",
+      tags: ["alignment","assessment","bloom:analyze"],
+      options: [
+        { text: "5-item multiple-choice recall quiz", score: -1, feedback: "Recall ≠ analyze. Mismatch.", hp:-8 },
+        { text: "Annotated paragraph labeling strategies + 2-sentence justification", score: 3, feedback: "Direct evidence of analysis.", unlock:"criteria_kick" },
+        { text: "Attendance check", score: -1, feedback: "No evidence collected.", hp:-8 }
+      ]
+    },
+    {
+      prompt: "Objective: 'Evaluate algorithmic bias in a model'. Which exit ticket best fits?",
+      tags: ["alignment","assessment","bloom:evaluate"],
+      options: [
+        { text: "Define 'algorithm'", score:-1, feedback:"Definition is remember/understand.", hp:-8 },
+        { text: "3-criterion quick rubric judging a model output", score:3, feedback:"Evidence of evaluation.", unlock:"alignment_uppercut" },
+        { text: "Debug a syntax error", score:0, feedback:"Different skill; not evaluation.", hp:-5 }
+      ]
+    },
+    {
+      prompt: "75-min class, fixed chairs. Choose a 12-min active segment that fits constraints.",
+      tags:["activity","constraints","timing"],
+      options:[
+        { text:"Full jigsaw with 5 groups + rotate twice", score:-1, feedback:"Too long for 12 min.", hp:-6 },
+        { text:"Think–Pair–Share on a targeted prompt", score:3, feedback:"Fits time & room limits.", unlock:"udl_dash" },
+        { text:"Outdoor gallery walk", score:0, feedback:"Logistically heavy here.", hp:-3 }
+      ]
+    }
+  ];
+  let deckIndex = 0;
+
+  // Simple lesson plan “export” state
+  const plan = {
+    context: { course:"Any 101", length:"75 min", room:"Fixed seats" },
+    objectives: [],
+    assessments: [],
+    activities: [],
+    udl: [],
+    contingencies: ["Markers dead → Slides + backchannel", "WiFi down → Paper version"]
+  };
+
+  // --- Input ---
+  window.addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); });
+  window.addEventListener('keyup', e => { keys.delete(e.key.toLowerCase()); });
+
+  // --- Helpers ---
+  function clamp(v,min,max){ return Math.max(min, Math.min(max,v)); }
+  function aabb(a,b){ return !(a.x+a.w<b.x || a.x>b.x+b.w || a.y+a.h<b.y || a.y>b.y+b.h); }
+  function showToast(msg){
+    toast.textContent = msg; toast.style.display='block';
+    clearTimeout(toast._t); toast._t = setTimeout(()=>toast.style.display='none', 1200);
+  }
+
+  // --- Pause Card UI ---
+  function openCard(card){
+    showingCard = true; paused = true;
+    pauseUI.prompt.textContent = card.prompt;
+    pauseUI.tags.innerHTML = card.tags.map(t=>`<span class="pill">${t}</span>`).join('');
+    pauseUI.options.innerHTML = '';
+    card.options.forEach((opt, i)=>{
+      const btn = document.createElement('button');
+      btn.textContent = opt.text;
+      btn.onclick = ()=>selectOption(card, opt);
+      pauseUI.options.appendChild(btn);
+    });
+    timeLeft = 10; pauseUI.timer.textContent = timeLeft;
+    pauseUI.wrap.style.display='grid';
+    timerId = setInterval(()=>{
+      timeLeft--; pauseUI.timer.textContent = timeLeft;
+      if(timeLeft<=0){ clearInterval(timerId); timeoutCard(card); }
+    }, 1000);
+  }
+  function closeCard(){
+    showingCard=false; paused=false;
+    pauseUI.wrap.style.display='none';
+    clearInterval(timerId);
+  }
+  function selectOption(card, opt){
+    // scoring/feedback
+    score += Math.max(0, opt.score*100);
+    combo = opt.score>0 ? combo+1 : 0;
+    if(opt.hp){ player.hp = clamp(player.hp + opt.hp, 0, 100); }
+    if(opt.unlock){ unlocks.add(opt.unlock); }
+    // naïve plan capture (for export)
+    if(card.tags.includes("assessment")){
+      plan.assessments.push({ prompt: card.prompt, choice: opt.text });
+      plan.objectives.push("Measurable objective aligned to assessment");
+    } else if(card.tags.includes("activity")){
+      plan.activities.push({ activity: opt.text, duration:"12 min", room:"Fixed chairs" });
+    }
+    showToast(opt.feedback);
+    nextEncounter();
+  }
+  function timeoutCard(card){
+    player.hp = clamp(player.hp-5,0,100);
+    combo = 0;
+    showToast("Hesitation! You took damage.");
+    nextEncounter();
+  }
+  function nextEncounter(){
+    deckIndex = (deckIndex+1) % deck.length;
+    closeCard();
+  }
+
+  // --- Combat stub (rectangle punch) ---
+  let score = 0, combo = 0;
+  const unlocks = new Set();
+
+  function spawnEnemy(){
+    const e = { x:cvs.width+40, y:groundY-50, w:40, h:50, vx:-80-(Math.random()*40), hp:20 };
+    enemies.push(e);
+  }
+
+  function punch(){
+    // short-range hitbox
+    const hb = { x: player.facing>0 ? player.x+player.w : player.x-24, y: player.y+8, w:24, h:24, life:120 };
+    attacks.push(hb);
+  }
+
+  // --- Game loop ---
+  function loop(ts){
+    const dt = (ts - last)/1000 || 0; last = ts;
+    if(!paused){
+      // input
+      player.vx = 0;
+      if(keys.has('a') || keys.has('arrowleft')) { player.vx = -player.speed; player.facing = -1; }
+      if(keys.has('d') || keys.has('arrowright')) { player.vx =  player.speed; player.facing =  1; }
+      if(keys.has(' ') && attacks.length===0){ punch(); }
+
+      // physics
+      player.x += player.vx*dt;
+      player.x = clamp(player.x, 10, cvs.width-10-player.w);
+
+      // enemies
+      if(Math.random()<0.02) spawnEnemy();
+      enemies.forEach(e=>{ e.x += e.vx*dt; });
+
+      // collisions
+      attacks.forEach(hb=>{
+        enemies.forEach(e=>{
+          if(e.hp>0 && aabb(hb,e)){
+            e.hp -= 10; score += 20; combo += 1;
+          }
+        });
+        hb.life -= dt*1000;
+      });
+      // cleanup
+      for(let i=enemies.length-1;i>=0;i--){
+        if(enemies[i].x<-60 || enemies[i].hp<=0) enemies.splice(i,1);
+      }
+      for(let i=attacks.length-1;i>=0;i--){
+        if(attacks[i].life<=0) attacks.splice(i,1);
+      }
+
+      // trigger a Pause Card periodically
+      if(!showingCard && Math.random()<0.01){
+        openCard(deck[deckIndex]);
+      }
+    }
+
+    // draw
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    // ground
+    ctx.fillStyle = '#0a0f26'; ctx.fillRect(0, groundY+player.h-6, cvs.width, 200);
+    // player
+    ctx.fillStyle = '#64a9ff'; ctx.fillRect(player.x, player.y, player.w, player.h);
+    // face direction marker
+    ctx.fillStyle = '#b9d3ff'; ctx.fillRect(player.facing>0?player.x+player.w-6:player.x, player.y+12, 6, 8);
+    // enemies
+    ctx.fillStyle = '#ff6b6b';
+    enemies.forEach(e=>{ ctx.fillRect(e.x, e.y, e.w, e.h); });
+    // attacks
+    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2;
+    attacks.forEach(hb=>{ ctx.strokeRect(hb.x, hb.y, hb.w, hb.h); });
+
+    // HUD
+    hud.hp.textContent = player.hp;
+    hud.score.textContent = score;
+    hud.combo.textContent = combo;
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // --- Export (simple Markdown text file for now) ---
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const md = [
+      `# Lesson Plan (Auto-generated)`,
+      `**Course:** ${plan.context.course}  |  **Length:** ${plan.context.length}  |  **Room:** ${plan.context.room}`,
+      `\n## Objectives`,
+      ...(plan.objectives.length? plan.objectives.map((o,i)=>`${i+1}. ${o}`) : ["1. (Add objectives)"]),
+      `\n## Assessments`,
+      ...(plan.assessments.length? plan.assessments.map(a=>`- ${a.choice}  \n  _From_: ${a.prompt}`) : ["- (Add assessments)"]),
+      `\n## Activities`,
+      ...(plan.activities.length? plan.activities.map(a=>`- ${a.activity} — ${a.duration} (${a.room})`) : ["- (Add activities)"]),
+      `\n## UDL & Contingencies`,
+      ...(plan.udl.length? plan.udl.map(u=>`- ${u}`):[]),
+      ...plan.contingencies.map(c=>`- ${c}`)
+    ].join('\n');
+    const blob = new Blob([md], {type:'text/markdown'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'lesson-plan.md';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // Quick start tip
+  showToast("Move: A/D or ←/→ | Punch: Space | Cards appear as you play");
+  </script>
+</body>
+</html>
