@@ -7,35 +7,35 @@
 <style>
   /* ===================== Accessibility-first Theme ===================== */
   :root{
-    /* Brand (kept), but signals use colour-blind-safe tokens below */
     --brand-primary:#9b1b55; /* magenta */
     --brand-accent:#3a225d;  /* deep purple */
 
-    /* Canvas & text (dark mode background for board) */
-    --bg:#2b2b2f;
-    --text:#f5f7fb;     /* brighter for contrast */
-    --muted:#c8c9d1;
+    /* Page canvas (keep neutral so white cards pop) */
+    --bg:#eef1f6;
+    --text:#111317;
+    --muted:#4b5160;
 
-    /* Board tiles */
-    --tile:#0a1b3a;
-    --tileText:#ffffff;
+    /* Cards (tiles) — LIGHT THEME */
+    --tile:#ffffff;
+    --tileText:#111317;
+    --tileBorder:#e6e8f0;
 
     /* Focus outline */
-    --focus:#ffbf00;    /* yellow works on dark/light */
+    --focus:#ffbf00;
 
     /* Shadows */
-    --shadow:0 6px 20px rgba(0,0,0,.35);
+    --shadow:0 8px 28px rgba(0,0,0,.14);
 
     /* Outcome signals (colour-blind safe) */
-    --ok:#1976d2;       /* blue */
-    --warn:#ef6c00;     /* orange */
-    --ok-bg:#e3f2fd;    /* pale blue */
-    --warn-bg:#fff3e0;  /* pale orange */
+    --ok:#1976d2;      /* blue */
+    --warn:#ef6c00;    /* orange */
+    --ok-bg:#e3f2fd;   /* pale blue */
+    --warn-bg:#fff3e0; /* pale orange */
   }
 
-  /* High contrast toggle (kept) */
   .contrast, .contrast :root{
-    --bg:#000; --text:#fff; --muted:#d6d6de; --tile:#000; --tileText:#fff;
+    --bg:#000; --text:#fff; --muted:#d6d6de;
+    --tile:#111; --tileText:#fff; --tileBorder:#2a2a35;
   }
 
   /* ===================== Base Layout ===================== */
@@ -71,8 +71,8 @@
   /* ===================== One-line Score Bar ===================== */
   .scorebar{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-    border-radius:14px; padding:8px;
+    background:#ffffff; border:1px solid #d9deea;
+    border-radius:14px; padding:8px; box-shadow:var(--shadow);
   }
   .team{
     display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center;
@@ -80,11 +80,11 @@
   .team label{opacity:.95}
   .team input{
     width:100%; min-width:0; padding:8px 10px; border-radius:10px;
-    border:1px solid rgba(255,255,255,.18); background:#121217; color:#fff;
+    border:1px solid #cfd6e5; background:#ffffff; color:#111317;
   }
   .score{
-    font-weight:900; text-align:right; padding:6px 8px; background:#0f0f15;
-    border:1px solid #2a2a35; border-radius:10px; min-width:72px; color:#fff;
+    font-weight:900; text-align:right; padding:6px 8px; background:#ffffff;
+    border:1px solid #cfd6e5; border-radius:10px; min-width:72px; color:#111317;
   }
 
   /* ===================== Board ===================== */
@@ -97,36 +97,31 @@
   }
   .tile{
     position:relative; overflow:hidden;
-    background:var(--tile); color:var(--tileText); border-radius:12px; min-height:90px;
+    background:var(--tile); color:var(--tileText); border-radius:12px; min-height:96px;
     display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:900;
-    cursor:pointer; user-select:none; box-shadow:var(--shadow);
+    cursor:pointer; user-select:none; box-shadow:var(--shadow); border:2px solid var(--tileBorder);
   }
-  .tile[aria-disabled="true"]{
-    opacity:1; color:#dde2f2; /* keep readable */
-    background:
-      repeating-linear-gradient(
-        45deg, rgba(255,255,255,.09) 0, rgba(255,255,255,.09) 6px,
-        transparent 6px, transparent 12px
-      ),
-      var(--tile);
-  }
-  .tile[aria-disabled="true"]::after{
-    content:"USED"; position:absolute; bottom:6px; right:8px; font-size:12px; letter-spacing:.08em; opacity:.9;
-  }
-
-  /* Logo watermark on every tile (reduced opacity for contrast safety) */
+  /* Logo watermark on every tile (very subtle for readability) */
   .tile::before{
     content:""; position:absolute; inset:0; pointer-events:none;
-    background-image:url("./assiniboinelogo.png");
-    background-repeat:no-repeat; background-position:center; background-size:60%;
-    opacity:.18; /* lower than before for readability */
-    mix-blend-mode:normal; filter:grayscale(0.1);
+    background-image:url("assiniboinelogo.png");
+    background-repeat:no-repeat; background-position:center; background-size:55%;
+    opacity:.08; filter:grayscale(0.1);
+  }
+  /* Used tiles -> hatch overlay + label (no dim) */
+  .tile[aria-disabled="true"]{
+    opacity:1; color:#3a3f4b; background:#ffffff; border-color:#d4d8e5;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(20,26,44,.08) 0, rgba(20,26,44,.08) 6px, transparent 6px, transparent 12px);
+  }
+  .tile[aria-disabled="true"]::after{
+    content:"USED"; position:absolute; bottom:6px; right:8px; font-size:12px; letter-spacing:.08em; color:#5a6070;
   }
 
   .footer{display:flex; gap:10px; align-items:center; justify-content:space-between; color:var(--muted)}
 
-  /* ===================== Modal ===================== */
-  dialog{ width:min(800px,92vw); border:none; border-radius:16px; padding:0; box-shadow:0 30px 80px rgba(0,0,0,.65); background:#17171d; color:#fff }
+  /* ===================== Modal (Light) ===================== */
+  dialog{ width:min(800px,92vw); border:none; border-radius:16px; padding:0; box-shadow:0 30px 80px rgba(0,0,0,.35); background:#ffffff; color:#111317 }
   .modal{ padding:18px; display:flex; flex-direction:column; gap:14px }
   .modal header{box-shadow:none; background:transparent; padding:0; display:flex; align-items:center; gap:10px}
   .badge{background:var(--brand-primary); color:#fff; font-weight:800; padding:4px 8px; border-radius:10px}
@@ -134,8 +129,8 @@
   .options{display:grid; gap:10px}
   .options button{
     min-height:48px;
-    text-align:left; padding:12px; background:#23232b; color:#f5f7fb;
-    border-radius:12px; border:2px solid #3b3b46;
+    text-align:left; padding:12px; background:#ffffff; color:#111317;
+    border-radius:12px; border:2px solid #d9deea;
   }
   .options button:focus{outline:3px solid var(--focus); outline-offset:2px}
   .options button.correct{
@@ -152,9 +147,9 @@
   }
   .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
   .timer{font-variant-numeric:tabular-nums; font-weight:900}
-  .buzzhint{color:#b8b8c7}
+  .buzzhint{color:#6a6f7d}
   .status{font-weight:800}
-  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:800; background:#32323b; color:#fff; padding:2px 6px; border-radius:6px}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:800; background:#e9ecf4; color:#111; padding:2px 6px; border-radius:6px}
   .muted{color:var(--muted)}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
@@ -172,7 +167,7 @@
 
   <header role="banner">
     <div class="brand">
-      <img src="./assiniboinelogo.png" alt="Assiniboine College logo"/>
+      <img src="assiniboinelogo.png" alt="Assiniboine College logo"/>
       <div class="title">
         <b>Teaching & Learning Jeopardy</b>
         <small>Assiniboine College — 5×5 board • MCQ • 15s • Buzzers <span class="kbd">1–4</span></small>
@@ -513,7 +508,7 @@ contrastBtn.onclick = ()=>{
 function init(){
   // Add team shape markers to labels (non-colour cues)
   document.querySelectorAll('.team label').forEach((lbl, i)=> {
-    lbl.setAttribute('data-shape', teamShapes[i] || "");
+    lbl.setAttribute('data-shape', [" ■"," ▲"," ●"," ◆"][i] || "");
   });
 
   drawBoard();
