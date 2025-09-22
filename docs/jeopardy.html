@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Assiniboine College • Teaching & Learning Jeopardy</title>
+<style>
+  :root{
+    --brand-primary:#9b1b55; /* magenta from logo */
+    --brand-accent:#3a225d;  /* deep purple from logo */
+    --bg:#f6f6f8;
+    --panel:#ffffff;
+    --text:#1c1c1c;
+    --muted:#6a6a74;
+    --good:#0a7d39;
+    --bad:#a21d2f;
+    --tile:#1c2d5a;
+    --tileText:#fefefe;
+    --focus:#1e90ff;
+    --shadow:0 6px 20px rgba(0,0,0,.12);
+  }
+  /* High contrast mode flips to darker bg and stronger contrast */
+  .contrast :root, .contrast{
+    --bg:#0c0c0f;
+    --panel:#1a1a21;
+    --text:#ffffff;
+    --muted:#d0d0d8;
+    --tile:#000000;
+    --tileText:#ffffff;
+  }
+  html,body{height:100%}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial;
+    background:var(--bg); color:var(--text); display:flex; flex-direction:column;
+  }
+  header{
+    display:flex; align-items:center; gap:16px; padding:12px 16px; background:#fff; box-shadow:var(--shadow);
+  }
+  header .brand{
+    display:flex; align-items:center; gap:12px;
+  }
+  header img{height:48px; width:auto}
+  header .title{
+    display:flex; flex-direction:column; line-height:1.2;
+  }
+  header .title b{font-size:18px}
+  header .title small{color:var(--muted)}
+  header .actions{margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  button, .btn{
+    background:var(--brand-primary); border:none; color:#fff; padding:10px 14px; border-radius:12px;
+    cursor:pointer; font-weight:600; box-shadow:var(--shadow);
+  }
+  button.secondary{background:var(--brand-accent)}
+  button.ghost{background:transparent; color:var(--brand-accent); border:2px solid var(--brand-accent)}
+  button:disabled{opacity:.5; cursor:not-allowed}
+  button:focus{outline:3px solid var(--focus); outline-offset:2px}
+  .pill{background:#ececf3; color:#333; padding:6px 10px; border-radius:999px; font-size:12px}
+  main{width:min(1200px,95vw); margin:18px auto; display:grid; gap:16px}
+  .topbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .teams{display:flex; gap:10px; flex-wrap:wrap}
+  .team{
+    background:var(--panel); padding:10px 12px; border-radius:14px; box-shadow:var(--shadow); display:flex; gap:8px; align-items:center;
+  }
+  .team input{
+    width:120px; padding:8px 10px; border-radius:10px; border:1px solid #d0d0d6; background:#fff;
+  }
+  .score{font-weight:800; min-width:70px; text-align:right}
+  .board{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:12px;
+  }
+  .cat{
+    background:linear-gradient(135deg,var(--brand-accent), var(--brand-primary));
+    color:#fff; padding:10px; border-radius:12px; text-align:center; font-weight:700; letter-spacing:.3px; min-height:64px; display:flex; align-items:center; justify-content:center;
+  }
+  .tile{
+    background:var(--tile); color:var(--tileText); border-radius:12px; min-height:82px; display:flex; align-items:center; justify-content:center;
+    font-size:28px; font-weight:900; cursor:pointer; user-select:none; box-shadow:var(--shadow);
+  }
+  .tile[aria-disabled="true"]{opacity:.35; pointer-events:none}
+  .footer{display:flex; gap:10px; align-items:center; justify-content:space-between; color:var(--muted)}
+  dialog{
+    width:min(800px,92vw); border:none; border-radius:16px; padding:0; box-shadow:0 30px 80px rgba(0,0,0,.45); background:var(--panel); color:var(--text)
+  }
+  .modal{
+    padding:18px; display:flex; flex-direction:column; gap:14px;
+  }
+  .modal header{box-shadow:none; background:transparent; padding:0; display:flex; align-items:center; gap:10px}
+  .badge{background:var(--brand-primary); color:#fff; font-weight:700; padding:4px 8px; border-radius:10px}
+  .question{font-size:20px; font-weight:700}
+  .options{display:grid; gap:10px}
+  .options button{
+    text-align:left; padding:12px; background:#f2f2f6; color:#15151a; border-radius:12px; border:2px solid transparent; box-shadow:none;
+  }
+  .options button:focus{border-color:var(--focus); outline:none}
+  .options button.correct{background:rgba(10,125,57,.12); border-color:var(--good)}
+  .options button.wrong{background:rgba(162,29,47,.12); border-color:var(--bad)}
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .timer{font-variant-numeric:tabular-nums; font-weight:900}
+  .buzzhint{color:var(--muted)}
+  .status{font-weight:700}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; font-weight:700; background:#ececf3; color:#111; padding:2px 6px; border-radius:6px}
+  .muted{color:var(--muted)}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .admin{background:var(--panel); padding:12px; border-radius:12px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px}
+  textarea.json{
+    width:100%; height:180px; padding:10px; border-radius:12px; border:1px solid #d0d0d6; font-family:ui-monospace,Consolas,monospace; background:#fff;
+  }
+  .note{font-size:12px; color:var(--muted)}
+</style>
+</head>
+<body>
+  <a class="sr-only" href="#board">Skip to board</a>
+  <header role="banner">
+    <div class="brand">
+      <img src="assiniboine.png" alt="Assiniboine College logo" onerror="this.style.display='none'"/>
+      <div class="title">
+        <b>Teaching & Learning Jeopardy</b>
+        <small>Assiniboine College — 5×5 board • MCQ • 15s • Buzzers <span class="kbd">1–4</span></small>
+      </div>
+    </div>
+    <div class="actions">
+      <span id="hiscore" class="pill" aria-live="polite">All-time high: —</span>
+      <button id="contrastBtn" class="ghost" aria-pressed="false" title="Toggle high contrast">High contrast</button>
+      <button id="adminBtn" class="secondary">Manage Content</button>
+      <button id="resetGameBtn" class="ghost">Reset Game</button>
+      <button id="resetScoresBtn">Reset Scores</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="topbar">
+      <div class="teams" aria-label="Teams and scores">
+        <div class="team">
+          <label>Team 1 <span class="kbd">1</span></label>
+          <input aria-label="Team 1 name" id="t1name" value="Team 1">
+          <div class="score" id="t1score">0</div>
+        </div>
+        <div class="team">
+          <label>Team 2 <span class="kbd">2</span></label>
+          <input aria-label="Team 2 name" id="t2name" value="Team 2">
+          <div class="score" id="t2score">0</div>
+        </div>
+        <div class="team">
+          <label>Team 3 <span class="kbd">3</span></label>
+          <input aria-label="Team 3 name" id="t3name" value="Team 3">
+          <div class="score" id="t3score">0</div>
+        </div>
+        <div class="team">
+          <label>Team 4 <span class="kbd">4</span></label>
+          <input aria-label="Team 4 name" id="t4name" value="Team 4">
+          <div class="score" id="t4score">0</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="board" class="board" role="grid" aria-label="Jeopardy board" tabindex="0"></section>
+
+    <div class="footer">
+      <div>
+        <span class="muted">Keyboard:</span>
+        <span class="kbd">1–4</span> buzz •
+        <span class="kbd">A–D</span> choose •
+        <span class="kbd">Enter</span> confirm •
+        <span class="kbd">Esc</span> close
+      </div>
+      <div id="remaining" class="muted"></div>
+    </div>
+
+    <!-- Admin / Authoring -->
+    <section class="admin" aria-labelledby="adminTitle">
+      <h3 id="adminTitle">Manage Content</h3>
+      <p class="note">Edit JSON (5 categories × 5 clues each). Click “Apply”. Use Import/Export to load/save. Game uses in-memory data. Only the all-time high score is persisted.</p>
+      <textarea id="jsonEditor" class="json" spellcheck="false"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="applyBtn">Apply</button>
+        <button id="exportBtn" class="ghost">Export JSON</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+        <button id="importBtn" class="ghost">Import JSON</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Question Modal -->
+  <dialog id="qdlg" aria-labelledby="qtitle" aria-describedby="qdesc">
+    <div class="modal">
+      <header class="row">
+        <div><span id="qcat" class="badge"></span> <span id="qvalue" class="badge" style="background:var(--brand-accent)"></span></div>
+        <div class="row" style="gap:16px">
+          <div><span class="muted">Timer:</span> <span id="qtimer" class="timer" aria-live="polite">15</span>s</div>
+          <div class="buzzhint">Buzz with <span class="kbd">1–4</span></div>
+        </div>
+      </header>
+      <div id="qtitle" class="question"></div>
+      <div id="qdesc" class="sr-only">Multiple choice question with options A to D.</div>
+      <div id="qstatus" class="status" aria-live="polite"></div>
+      <div id="qoptions" class="options"></div>
+      <div class="row">
+        <span class="muted">Active: <b id="activeTeam">None</b></span>
+        <button id="closeBtn" class="ghost">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+<script>
+/* ----------------------------- Seed Content ----------------------------- */
+const DEFAULT_GAME = {
+  categories: [
+    { name: "Bloom's Taxonomy", clues: [
+      {value:200,question:"Which level focuses on recalling facts and basic concepts?",options:["Apply","Analyze","Remember","Create"],answerIndex:2,notes:"Remember = recall"},
+      {value:400,question:"Reorganizing information into a new structure best matches which level?",options:["Evaluate","Apply","Create","Understand"],answerIndex:2},
+      {value:600,question:"Choosing the best rubric after reviewing options aligns with:",options:["Analyze","Evaluate","Remember","Understand"],answerIndex:1},
+      {value:800,question:"Solving a novel classroom problem using a known strategy shows:",options:["Apply","Analyze","Understand","Remember"],answerIndex:0},
+      {value:1000,question:"Determining relationships among parts (e.g., compare/contrast) is:",options:["Analyze","Understand","Create","Evaluate"],answerIndex:0},
+    ]},
+    { name: "Backward Design", clues: [
+      {value:200,question:"What is the first stage of Backward Design?",options:["Plan learning activities","Identify desired results","Write reflections","Choose textbooks"],answerIndex:1},
+      {value:400,question:"Evidence used to determine if outcomes were met is called:",options:["Activities","Assessments","Objectives","Standards"],answerIndex:1},
+      {value:600,question:"Learning activities are chosen primarily to:",options:["Fill time","Match instructor preference","Align to outcomes and assessments","Increase homework"],answerIndex:2},
+      {value:800,question:"A well-written outcome should be:",options:["Vague and inspirational","Measurable and learner-centered","Content-heavy","Instructor-focused"],answerIndex:1},
+      {value:1000,question:"Which outcome uses clear, observable behavior?",options:["Know photosynthesis","Understand critical thinking","Analyze case studies to identify fallacies","Learn algebra"],answerIndex:2},
+    ]},
+    { name: "Adult Learning (Andragogy)", clues: [
+      {value:200,question:"Adults are primarily motivated by:",options:["Grades","Extrinsic rewards","Internal relevance & problem-solving","Competition"],answerIndex:2},
+      {value:400,question:"Effective adult learning connects new content to:",options:["Prior experience","Age group","Lecture length","Syllabus order"],answerIndex:0},
+      {value:600,question:"Giving learners choice in topics or projects supports:",options:["Dependency","Self-concept/autonomy","Uniformity","Passive learning"],answerIndex:1},
+      {value:800,question:"Immediate application of learning aligns with:",options:["Future-oriented design","Delayed assessment","Readiness to learn (problem-centered)","Note-taking quality"],answerIndex:2},
+      {value:1000,question:"Which practice reflects respect for adult learners?",options:["Surprise graded quizzes","Ignoring professional backgrounds","Co-creating ground rules","One-way lectures only"],answerIndex:2},
+    ]},
+    { name: "Assessment & Feedback", clues: [
+      {value:200,question:"Low-stake checks during learning are:",options:["Summative assessments","Formative assessments","Norm-referenced tests","Grades"],answerIndex:1},
+      {value:400,question:"Which feedback is most effective?",options:["General: 'Good job!'", "Specific, timely, actionable", "End-term only", "Public shaming"],answerIndex:1},
+      {value:600,question:"Aligning rubrics to outcomes primarily improves:",options:["Student satisfaction only","Validity of assessment","Workload","Class size"],answerIndex:1},
+      {value:800,question:"Two-stage exams combine individual and group phases to enhance:",options:["Memorization","Retrieval practice & feedback","Proctoring","Attendance"],answerIndex:1},
+      {value:1000,question:"Which is an example of authentic assessment?",options:["Multiple-choice recall test","Simulated client consultation","Random pop quiz","Spelling bee"],answerIndex:1},
+    ]},
+    { name: "Active Learning", clues: [
+      {value:200,question:"Think-Pair-Share is primarily used to:",options:["Deliver content","Promote participation & processing","Administer tests","Take attendance"],answerIndex:1},
+      {value:400,question:"Brief, spaced retrieval during class supports:",options:["Cramming","Cognitive load","Long-term retention","Note copying"],answerIndex:2},
+      {value:600,question:"Which design keeps cognitive load manageable?",options:["Dense slides","Worked examples & chunking","Rapid topic switching","Background distractions"],answerIndex:1},
+      {value:800,question:"Case-based learning best supports:",options:["Surface remembering only","Transfer of knowledge to practice","Classroom management","Attendance"],answerIndex:1},
+      {value:1000,question:"Which tactic increases equitable participation?",options:["Cold-calling only","Volunteer-only discussion","Structured turn-taking & roles","One student leads always"],answerIndex:2},
+    ]},
+  ]
+};
+
+/* ------------------------------ Game State ------------------------------ */
+let data = structuredClone(DEFAULT_GAME);
+let used = new Set(); // "catIndex-value"
+let scores = [0,0,0,0];
+let ineligibleThisClue = new Set(); // team indexes that already answered wrong
+let activeTeam = null; // 0..3
+let timerId = null, timeLeft = 15;
+let openTile = null; // {ci, qi, value}
+const HISCORE_KEY = "jeopardyHighScoreV1";
+
+/* ----------------------------- Elements ----------------------------- */
+const boardEl = document.getElementById('board');
+const remainingEl = document.getElementById('remaining');
+const dlg = document.getElementById('qdlg');
+const qcat = document.getElementById('qcat');
+const qvalue = document.getElementById('qvalue');
+const qtitle = document.getElementById('qtitle');
+const qstatus = document.getElementById('qstatus');
+const qoptions = document.getElementById('qoptions');
+const closeBtn = document.getElementById('closeBtn');
+const timerEl = document.getElementById('qtimer');
+const activeTeamEl = document.getElementById('activeTeam');
+
+const teamNames = [document.getElementById('t1name'),document.getElementById('t2name'),document.getElementById('t3name'),document.getElementById('t4name')];
+const teamScores = [document.getElementById('t1score'),document.getElementById('t2score'),document.getElementById('t3score'),document.getElementById('t4score')];
+
+const adminBtn = document.getElementById('adminBtn');
+const resetScoresBtn = document.getElementById('resetScoresBtn');
+const resetGameBtn = document.getElementById('resetGameBtn');
+const contrastBtn = document.getElementById('contrastBtn');
+const hiscoreEl = document.getElementById('hiscore');
+
+const jsonEditor = document.getElementById('jsonEditor');
+const applyBtn = document.getElementById('applyBtn');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFile = document.getElementById('importFile');
+
+/* --------------------------- Utility helpers --------------------------- */
+const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+function updateRemaining(){
+  const total = 25;
+  remainingEl.textContent = `${total - used.size} clues remaining`;
+}
+function drawBoard(){
+  boardEl.innerHTML = "";
+  // header row: categories
+  data.categories.forEach(cat=>{
+    const h = document.createElement('div'); h.className='cat'; h.textContent = cat.name; boardEl.appendChild(h);
+  });
+  // 5 rows of values
+  const values = [200,400,600,800,1000];
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
+      const value = values[r];
+      const tile = document.createElement('button');
+      tile.className='tile'; tile.setAttribute('role','button');
+      tile.setAttribute('aria-label', `${data.categories[c].name} for ${value}`);
+      const key = `${c}-${value}`;
+      if(used.has(key)) tile.setAttribute('aria-disabled','true');
+      tile.textContent = value;
+      tile.addEventListener('click', ()=>openQuestion(c, r, value));
+      boardEl.appendChild(tile);
+    }
+  }
+  boardEl.style.gridTemplateColumns = "repeat(5,1fr)";
+  updateRemaining();
+}
+function endGameIfDone(){
+  if(used.size === 25){
+    const maxScore = Math.max(...scores);
+    const winnerIdx = scores.indexOf(maxScore);
+    const winnerName = teamNames[winnerIdx].value || `Team ${winnerIdx+1}`;
+    // High score persistence
+    const hi = JSON.parse(localStorage.getItem(HISCORE_KEY)||"null");
+    if(!hi || maxScore>hi.score){
+      localStorage.setItem(HISCORE_KEY, JSON.stringify({name:winnerName, score:maxScore, at:new Date().toISOString()}));
+      updateHiscore();
+      alert(`Game over! Winner: ${winnerName} with ${maxScore} points.\n🎉 New all-time high score!`);
+    }else{
+      alert(`Game over! Winner: ${winnerName} with ${maxScore} points.`);
+    }
+  }
+}
+function updateHiscore(){
+  const hi = JSON.parse(localStorage.getItem(HISCORE_KEY)||"null");
+  hiscoreEl.textContent = hi ? `All-time high: ${hi.name} – ${hi.score}` : "All-time high: —";
+}
+function setScore(team, delta){
+  scores[team]+=delta;
+  teamScores[team].textContent = scores[team];
+}
+/* ----------------------------- Question UI ----------------------------- */
+function openQuestion(catIndex, qIndex, value){
+  // prevent reopening
+  const usedKey = `${catIndex}-${value}`;
+  if(used.has(usedKey)) return;
+  openTile = {ci:catIndex, qi:qIndex, value};
+  ineligibleThisClue.clear();
+  activeTeam = null; updateActiveTeam();
+
+  const cat = data.categories[catIndex];
+  const raw = cat.clues[qIndex];
+
+  qcat.textContent = cat.name; qvalue.textContent = value;
+  qtitle.textContent = raw.question;
+  qstatus.textContent = "Waiting for buzz…";
+
+  // Prepare options: shuffle while tracking correct index
+  const indices = shuffle([0,1,2,3]);
+  const correctLabel = "ABCD"[indices.indexOf(raw.answerIndex)];
+  qoptions.innerHTML = "";
+  indices.forEach((origIdx, pos)=>{
+    const btn = document.createElement('button');
+    btn.innerHTML = `<b>${"ABCD"[pos]}.</b> ${raw.options[origIdx]}`;
+    btn.dataset.correct = (origIdx === raw.answerIndex) ? "1" : "0";
+    btn.dataset.letter = "ABCD"[pos];
+    btn.addEventListener('click', ()=> attemptAnswer(btn));
+    qoptions.appendChild(btn);
+  });
+
+  // Start timer
+  timeLeft = 15; timerEl.textContent = timeLeft;
+  if(timerId) clearInterval(timerId);
+  timerId = setInterval(()=>{
+    timeLeft--; timerEl.textContent = timeLeft;
+    if(timeLeft<=0){ clearInterval(timerId); lockQuestion("Time! Correct: " + revealCorrect()); }
+  },1000);
+
+  // Open dialog
+  dlg.showModal();
+  dlg.addEventListener("close", ()=>{ /* noop */ }, {once:true});
+
+  // Mark tile used once dialog closes (if answered or timed)
+  closeBtn.onclick = ()=>{ dlg.close(); };
+  dlg.addEventListener('cancel', (e)=>{ e.preventDefault(); dlg.close(); });
+
+  // Keyboard bindings for letters
+  window.addEventListener('keydown', keyHandler);
+  function keyHandler(e){
+    if(!dlg.open) { window.removeEventListener('keydown', keyHandler); return; }
+    const kc = e.key.toLowerCase();
+    if(['a','b','c','d'].includes(kc)){
+      const idx = ['a','b','c','d'].indexOf(kc);
+      const btn = qoptions.children[idx];
+      attemptAnswer(btn);
+    }else if(['1','2','3','4'].includes(e.key)){
+      buzz(parseInt(e.key,10)-1);
+    }else if(e.key==='Enter'){
+      // no-op (click chosen option handled on click)
+    }else if(e.key==='Escape'){
+      dlg.close();
+    }
+  }
+
+  // When dialog closes: finalize and disable tile
+  dlg.addEventListener('close', ()=>{
+    used.add(usedKey);
+    drawBoard();
+    endGameIfDone();
+  }, {once:true});
+}
+function updateActiveTeam(){
+  activeTeamEl.textContent = activeTeam==null ? "None" : (teamNames[activeTeam].value || `Team ${activeTeam+1}`);
+}
+function buzz(teamIdx){
+  if(activeTeam!=null) return; // someone already buzzed
+  if(ineligibleThisClue.has(teamIdx)) return; // already wrong this clue
+  activeTeam = teamIdx; updateActiveTeam();
+  qstatus.textContent = `${teamNames[teamIdx].value || `Team ${teamIdx+1}`} buzzed! Choose A–D and press/click.`;
+}
+function attemptAnswer(btn){
+  if(activeTeam==null){ qstatus.textContent="Buzz first with 1–4."; return; }
+  const correct = btn.dataset.correct === "1";
+  // visual feedback
+  [...qoptions.children].forEach(b=>b.disabled=true);
+  btn.classList.add(correct ? "correct" : "wrong");
+
+  const val = openTile.value;
+  if(correct){
+    clearInterval(timerId);
+    setScore(activeTeam, val);
+    lockQuestion("Correct! +" + val);
+  }else{
+    setScore(activeTeam, -val);
+    ineligibleThisClue.add(activeTeam);
+    const remainingTeams = [0,1,2,3].filter(t=>!ineligibleThisClue.has(t));
+    if(remainingTeams.length===0){
+      clearInterval(timerId);
+      lockQuestion("No more teams. Correct: " + revealCorrect());
+    }else{
+      activeTeam = null; updateActiveTeam();
+      qstatus.textContent = "Wrong. Others may buzz!";
+      // Re-enable other options for next team attempt
+      [...qoptions.children].forEach(b=>{ if(b!==btn){ b.disabled=false; } });
+    }
+  }
+}
+function revealCorrect(){
+  let text = "";
+  [...qoptions.children].forEach(b=>{
+    if(b.dataset.correct==="1"){ b.classList.add("correct"); text = b.textContent.trim(); }
+  });
+  return text;
+}
+function lockQuestion(message){
+  qstatus.textContent = message;
+  [...qoptions.children].forEach(b=>b.disabled=true);
+  activeTeam=null; updateActiveTeam();
+}
+/* --------------------------- Admin / Authoring --------------------------- */
+function loadEditor(){
+  jsonEditor.value = JSON.stringify(data, null, 2);
+}
+applyBtn.onclick = ()=>{
+  try{
+    const obj = JSON.parse(jsonEditor.value);
+    // minimal validation: 5 categories × 5 clues each
+    if(!obj.categories || obj.categories.length!==5) throw new Error("Need exactly 5 categories.");
+    obj.categories.forEach((c,i)=>{
+      if(!c.clues || c.clues.length!==5) throw new Error(`Category ${i+1} must have 5 clues.`);
+      c.clues.forEach((q,j)=>{
+        if(!Array.isArray(q.options) || q.options.length!==4) throw new Error(`Clue ${i+1}.${j+1} needs 4 options.`);
+        if(typeof q.answerIndex!=="number" || q.answerIndex<0 || q.answerIndex>3) throw new Error(`Clue ${i+1}.${j+1} answerIndex 0–3 required.`);
+      });
+    });
+    data = obj; used.clear(); drawBoard();
+    alert("Content applied.");
+  }catch(e){ alert("Invalid JSON: " + e.message); }
+};
+exportBtn.onclick = ()=>{
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download="jeopardy-content.json"; a.click();
+  URL.revokeObjectURL(url);
+};
+importBtn.onclick = ()=> importFile.click();
+importFile.onchange = (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  file.text().then(txt=>{ jsonEditor.value = txt; }).catch(err=>alert("Could not read file: " + err));
+};
+/* ---------------------------- Buttons / Misc ---------------------------- */
+resetScoresBtn.onclick = ()=>{
+  scores=[0,0,0,0]; teamScores.forEach((el,i)=>el.textContent = "0");
+};
+resetGameBtn.onclick = ()=>{
+  if(confirm("Reset game? This will clear the board (scores stay).")){
+    used.clear(); drawBoard();
+  }
+};
+adminBtn.onclick = ()=>{
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+  jsonEditor.focus();
+};
+contrastBtn.onclick = ()=>{
+  const on = !document.body.classList.contains('contrast');
+  document.body.classList.toggle('contrast', on);
+  contrastBtn.setAttribute('aria-pressed', String(on));
+};
+/* ------------------------------- Init ----------------------------------- */
+function init(){
+  loadEditor();
+  drawBoard();
+  updateHiscore();
+  // Global key handler for buzzers
+  window.addEventListener('keydown', (e)=>{
+    if(!dlg.open && ['1','2','3','4'].includes(e.key)){
+      buzz(parseInt(e.key,10)-1);
+    }
+  });
+}
+init();
+</script>
+</body>
+</html>
