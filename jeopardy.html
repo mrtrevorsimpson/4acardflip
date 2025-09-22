@@ -23,6 +23,37 @@
   .contrast, .contrast :root{
     --bg:#000; --panel:#0f0f13; --text:#fff; --muted:#d6d6de; --tile:#000; --tileText:#fff;
   }
+<script>
+/* Auto-resize messenger for LMS iframes (Moodle) */
+(function () {
+  function sendHeight() {
+    try {
+      var h = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        document.documentElement.offsetHeight,
+        document.body.offsetHeight
+      );
+      parent.postMessage({ type: 'jeopardy-size', height: h }, '*');
+    } catch (e) { /* in same-origin errors, just ignore */ }
+  }
+  // Send on load, on resize, and whenever content/layout changes
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  if ('ResizeObserver' in window) {
+    var ro = new ResizeObserver(sendHeight);
+    ro.observe(document.documentElement);
+    ro.observe(document.body);
+  } else {
+    // Fallback: ping occasionally (lightweight)
+    setInterval(sendHeight, 1000);
+  }
+  // Also allow parent to request a re-measure
+  window.addEventListener('message', function (e) {
+    if (e && e.data && e.data.type === 'jeopardy-ping') sendHeight();
+  });
+})();
+</script>
 
   /* -------------------- Base Layout -------------------- */
   html,body{height:100%}
