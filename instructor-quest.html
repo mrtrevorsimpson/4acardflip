@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Instructor Quest — LIVE v10</title>
+<title>Instructor Quest — Phase 3 (Minimap+Debug)</title>
 <style>
   :root{ --bg:#0c0f17; --line:#243046; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
@@ -29,6 +29,14 @@
   #err{position:absolute;right:.6rem;top:.6rem;background:#7f1d1d;border:1px solid #ef4444;display:none}
   #dbg{position:absolute;left:.6rem;bottom:.6rem;background:#0b1220cc;border:1px solid #334155}
 
+  /* Floating controls */
+  .controls{position:absolute;right:.6rem;bottom:.6rem;display:flex;gap:.5rem;flex-wrap:wrap}
+  .controls .btn{pointer-events:auto;background:#0e1a30;border:1px solid #29476f}
+
+  /* Minimap */
+  #minimap{position:absolute;top:.6rem;right:.6rem;background:#0b1220cc;border:1px solid #334155;border-radius:.4rem;padding:.3rem}
+  #minimap canvas{display:block}
+
   /* Modal */
   .modal{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);}
   .modal.show{display:grid;}
@@ -43,24 +51,18 @@
   .badge-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
   .badge{background:#13223f;border:1px solid #2b4b8a;color:#dbeafe;padding:.25rem .5rem;border-radius:.5rem;font-size:.8rem}
   .poster{max-width:220px;border-radius:10px;border:1px solid #2a3a5a;margin-right:12px}
-
-  /* TEMP LIVE overlay (remove after confirming) */
-  #liveFlag{position:absolute;inset:0;display:grid;place-items:center;
-            background:rgba(0,200,0,.18);color:#fff;font-size:28px;font-weight:900;
-            text-shadow:0 2px 6px rgba(0,0,0,.6);pointer-events:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <img class="logo" src="assiniboine.png" alt="Assiniboine" onerror="this.style.display='none'">
-    <h1>Instructor Quest — LIVE v10</h1>
+    <h1>Instructor Quest — Phase 3 (Minimap)</h1>
     <div class="grow"></div>
     <button class="btn" id="audioBtn">🔈 Audio</button>
   </header>
 
   <main id="game" aria-label="Wolf3D-like hallway">
-    <div id="liveFlag">✔ LIVE v10</div><!-- REMOVE ME AFTER CONFIRMING LIVE -->
     <canvas id="view" width="960" height="540"></canvas>
 
     <div class="hud">
@@ -73,6 +75,14 @@
     <div id="err" class="chip"></div>
     <div id="dbg" class="chip">dbg</div>
 
+    <div id="minimap"><canvas id="mapview" width="160" height="80"></canvas></div>
+
+    <div class="controls">
+      <button class="btn" id="rotateBtn">Rotate</button>
+      <button class="btn" id="nudgeBtn">Nudge Forward</button>
+      <button class="btn" id="resetBtn">Reset</button>
+    </div>
+
     <div class="modal" id="modal"><div class="card" id="card"></div></div>
   </main>
 </div>
@@ -80,7 +90,7 @@
 <script>
 'use strict';
 
-/* ---------- Error reporter (shows on-page) ---------- */
+/* ---------- Error reporter ---------- */
 (function(){
   const err = document.getElementById('err');
   window.addEventListener('error', e=>{
@@ -89,7 +99,7 @@
   });
 })();
 
-/* ---------- Canvas sizing (robust) ---------- */
+/* ---------- Canvas sizing ---------- */
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d', { alpha: false });
 
@@ -102,12 +112,12 @@ function resizeCanvas(){
   const game = document.getElementById('game');
   let w = game.clientWidth || 960;
   let h = game.clientHeight || 540;
-  if (!h || h < 240) h = 560;          // hard fallback
-  canvas.width = w; canvas.height = h; // pixel size
+  if (!h || h < 240) h = 560;
+  canvas.width = w; canvas.height = h;
   W = w; H = h; NUM_RAYS = Math.floor(W/2);
   showDbg();
 }
-function showDbg(){ document.getElementById('dbg').textContent = `W:${W} H:${H} Rays:${NUM_RAYS}`; }
+function showDbg(){ document.getElementById('dbg').textContent = `W:${W} H:${H} Rays:${NUM_RAYS}  |  x:${player.x.toFixed(2)} y:${player.y.toFixed(2)} a:${player.a.toFixed(2)}`; }
 addEventListener('load', resizeCanvas);
 addEventListener('resize', resizeCanvas);
 
@@ -187,6 +197,7 @@ function drawWorld(){
   ctx.fillStyle='#0b1020'; ctx.fillRect(0,0,W,H/2);
   ctx.fillStyle='#0a0d17'; ctx.fillRect(0,H/2,W,H/2);
 
+  let anyHit=false;
   for(let r=0;r<NUM_RAYS;r++){
     const rayAngle=(player.a - FOV/2) + (r/NUM_RAYS)*FOV;
     const {depth,hit} = castRay(rayAngle);
@@ -198,23 +209,57 @@ function drawWorld(){
     const x = Math.floor((r/NUM_RAYS)*W);
     ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,h);
 
-    // highlights
+    if(hit){ anyHit=true; }
     if(hit===2){ ctx.fillStyle=varAccent(); ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,2); ctx.fillRect(x,(H+h)/2-2,Math.ceil(W/NUM_RAYS)+1,2); }
     if(hit===3){ ctx.fillStyle='rgba(239,68,68,.85)'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,1); }
   }
 
-  // *** ALWAYS show LIVE text in-canvas so we know this build rendered ***
-  ctx.fillStyle = 'rgba(255,255,255,.9)';
-  ctx.font = 'bold 18px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-  ctx.fillText('PHASE 3 LIVE v10', 12, 24);
-}
-function varAccent(){ return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#38bdf8'; }
+  if(!anyHit){
+    ctx.fillStyle='#ef4444'; ctx.font='bold 18px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial';
+    ctx.fillText('NO HITS — rays did not find walls. (Map/scale?)', 12, 24);
+  }
 
-/* ---------- Game loop (with try/catch to surface errors) ---------- */
+  // live label
+  ctx.fillStyle='rgba(255,255,255,.9)';
+  ctx.font='bold 16px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial';
+  ctx.fillText('PHASE 3 (minimap build)', 12, 46);
+}
+
+/* ---------- Minimap ---------- */
+const mapCanvas = document.getElementById('mapview');
+const mctx = mapCanvas.getContext('2d');
+function drawMinimap(){
+  const scaleX = mapCanvas.width / cols;
+  const scaleY = mapCanvas.height / rows;
+  mctx.clearRect(0,0,mapCanvas.width,mapCanvas.height);
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<cols;x++){
+      const ch = map[y][x];
+      if (ch==='1'){ mctx.fillStyle='#334155'; }
+      else if(ch==='E'){ mctx.fillStyle='#38bdf8'; }
+      else if(ch==='3'){ mctx.fillStyle='#ef4444'; }
+      else { mctx.fillStyle='#0b1220'; }
+      mctx.fillRect(x*scaleX, y*scaleY, scaleX-1, scaleY-1);
+    }
+  }
+  // player
+  mctx.fillStyle='#22c55e';
+  mctx.beginPath();
+  mctx.arc(player.x*scaleX, player.y*scaleY, 2.5, 0, Math.PI*2);
+  mctx.fill();
+  // FOV line
+  mctx.strokeStyle='#22c55e';
+  mctx.beginPath();
+  mctx.moveTo(player.x*scaleX, player.y*scaleY);
+  mctx.lineTo((player.x+Math.cos(player.a))*scaleX, (player.y+Math.sin(player.a))*scaleY);
+  mctx.stroke();
+}
+
+/* ---------- Game loop ---------- */
 function loop(t){
   try{
     const dt=Math.min(0.05,(t-lastTime)/1000); lastTime=t;
-    move(dt); drawWorld();
+    move(dt); drawWorld(); drawMinimap(); showDbg();
     requestAnimationFrame(loop);
   }catch(e){
     const err=document.getElementById('err');
@@ -241,6 +286,17 @@ canvas.addEventListener('mousemove',e=>{
   if (document.pointerLockElement===canvas) player.a += e.movementX*0.0025;
 });
 canvas.addEventListener('click',()=>canvas.requestPointerLock());
+
+/* ---------- Buttons (prove render/move even if keys blocked) ---------- */
+let autoRotate=false;
+document.getElementById('rotateBtn').onclick=()=>{ autoRotate=!autoRotate; document.getElementById('rotateBtn').textContent = autoRotate? 'Stop Rotate':'Rotate'; };
+document.getElementById('nudgeBtn').onclick=()=>{ player.fwd=1; setTimeout(()=>{ player.fwd=0; }, 250); };
+document.getElementById('resetBtn').onclick=()=>{ player.x=2.5; player.y=2.5; player.a=0; };
+
+(function spin(){
+  if(autoRotate) player.a += 0.02;
+  requestAnimationFrame(spin);
+})();
 
 /* ---------- Modal helpers ---------- */
 const modal=document.getElementById('modal'), card=document.getElementById('card');
@@ -281,23 +337,6 @@ const ENCOUNTERS = [
       "Yes—co-creating norms builds buy-in and attention.",
       "Enforcement alone may spark resistance—invite ownership first.",
       "Silence can signal acceptance. Try a quick norms reset."
-    ]
-  },
-  {
-    id:"hall-003",
-    title:"Abstract Lectures",
-    scenario:"Learners say content feels abstract and ask for more hands-on.",
-    choices:[
-      "Add a weekly mini-lab applying the concept.",
-      "Double the lecture time to cover fundamentals.",
-      "Assign extra reading."
-    ],
-    correct_index:0,
-    theory_tags:["Experiential Learning","Constructivism","4As: Apply"],
-    feedback:[
-      "Exactly—application cements understanding.",
-      "More theory won’t fix a lack of practice.",
-      "Reading helps, but practice drives transfer."
     ]
   }
 ];
@@ -409,6 +448,7 @@ document.getElementById('audioBtn').onclick=()=> {
 };
 
 /* ---------- Utils ---------- */
+function varAccent(){ return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#38bdf8'; }
 function shuffle(a){ const arr=a.slice(); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
 </script>
 </body>
