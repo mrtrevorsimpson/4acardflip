@@ -3,17 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Instructor Quest — Phase 2B (Debug)</title>
+<title>Instructor Quest — Phase 3</title>
 <style>
-  :root{ --bg:#0c0f17; --line:#243046; --text:#e5e7eb; --muted:#94a3b8; }
+  :root{ --bg:#0c0f17; --line:#243046; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+
   /* Header */
   header{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;border-bottom:1px solid var(--line);
     background:linear-gradient(180deg,#121a2a,#0e1422);}
   header img.logo{height:32px}
   header h1{margin:0;font-size:1.05rem;font-weight:800}
   header .grow{flex:1}
-  header .btn{background:#141c2c;border:1px solid #23304a;color:var(--text);padding:.4rem .6rem;border-radius:.5rem;cursor:pointer;font-weight:700;letter-spacing:.3px}
+  header .btn{background:#141c2c;border:1px solid #23304a;color:var(--text);
+    padding:.4rem .6rem;border-radius:.5rem;cursor:pointer;font-weight:700;letter-spacing:.3px}
+  header .btn:hover{border-color:#3a4e79}
 
   /* Layout */
   .wrap{display:grid;grid-template-rows:auto 1fr;height:100vh;}
@@ -37,6 +40,9 @@
   .choices button{background:#121a2a;border:1px solid #2a3a5a;border-radius:10px;padding:.55rem .7rem;color:#e5e7eb;cursor:pointer;text-align:left}
   .choices button:hover{border-color:#4663a0}
   .feedback{margin-top:.6rem;padding:.5rem .6rem;border-radius:10px;background:#0c1220;color:#cbd5e1;border:1px solid #243b69}
+  .badge-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
+  .badge{background:#13223f;border:1px solid #2b4b8a;color:#dbeafe;padding:.25rem .5rem;border-radius:.5rem;font-size:.8rem}
+  .poster{max-width:220px;border-radius:10px;border:1px solid #2a3a5a;margin-right:12px}
 </style>
 </head>
 <body>
@@ -50,15 +56,10 @@
 
   <main id="game" aria-label="Wolf3D-like hallway">
     <canvas id="view" width="960" height="540"></canvas>
-    <div style="position:absolute;inset:0;display:grid;place-items:center;
-            background:rgba(0,200,0,.2);color:#fff;font-size:28px;
-            font-weight:900;text-shadow:0 2px 6px rgba(0,0,0,.6);">
-  ✅ DEBUG v7 LOADED
-</div>
-
 
     <div class="hud">
       <div class="chip">Score: <span id="score">0</span></div>
+      <div class="chip">Badges: <span id="badgeCount">0</span></div>
       <div class="chip">Level <span id="level">1</span>/3</div>
       <div class="chip">Click canvas → mouse-look • WASD move • <strong>E</strong> interact</div>
     </div>
@@ -73,7 +74,7 @@
 <script>
 'use strict';
 
-/* ---------- On-page error reporter ---------- */
+/* ---------- Error reporter (shows on-page) ---------- */
 (function(){
   const err = document.getElementById('err');
   window.addEventListener('error', e=>{
@@ -96,25 +97,18 @@ function resizeCanvas(){
   let w = game.clientWidth || 960;
   let h = game.clientHeight || 540;
   if (!h || h < 240) h = 560;          // hard fallback
-  canvas.width = w; canvas.height = h; // important: set pixel size
+  canvas.width = w; canvas.height = h; // pixel size
   W = w; H = h; NUM_RAYS = Math.floor(W/2);
-  paintBackground();                    // paint immediately so we SEE it
   showDbg();
 }
-function paintBackground(){
-  // obvious background to prove canvas is alive
-  ctx.fillStyle = '#0ea5a5'; ctx.fillRect(0,0,W,H/2);
-  ctx.fillStyle = '#0b1430'; ctx.fillRect(0,H/2,W,H/2);
-}
-function showDbg(){
-  document.getElementById('dbg').textContent = `W:${W} H:${H} Rays:${NUM_RAYS}`;
-}
+function showDbg(){ document.getElementById('dbg').textContent = `W:${W} H:${H} Rays:${NUM_RAYS}`; }
 addEventListener('load', resizeCanvas);
 addEventListener('resize', resizeCanvas);
 
 /* ---------- World data ---------- */
-const state = { level:1, score:0 };
+const state = { level:1, score:0, badges:new Set(), audioOn:false };
 const scoreEl = document.getElementById('score');
+const badgeEl = document.getElementById('badgeCount');
 const levelEl = document.getElementById('level');
 
 const levels = [
@@ -199,10 +193,11 @@ function drawWorld(){
     ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,h);
 
     // highlights
-    if(hit===2){ ctx.fillStyle='#38bdf8'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,2); ctx.fillRect(x,(H+h)/2-2,Math.ceil(W/NUM_RAYS)+1,2); }
+    if(hit===2){ ctx.fillStyle=varAccent(); ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,2); ctx.fillRect(x,(H+h)/2-2,Math.ceil(W/NUM_RAYS)+1,2); }
     if(hit===3){ ctx.fillStyle='rgba(239,68,68,.85)'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,1); }
   }
 }
+function varAccent(){ return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#38bdf8'; }
 
 /* ---------- Game loop (with try/catch to surface errors) ---------- */
 function loop(t){
@@ -236,26 +231,67 @@ canvas.addEventListener('mousemove',e=>{
 });
 canvas.addEventListener('click',()=>canvas.requestPointerLock());
 
-/* ---------- Encounter (one) ---------- */
+/* ---------- Modal helpers ---------- */
 const modal=document.getElementById('modal'), card=document.getElementById('card');
 function show(html){ card.innerHTML=html; modal.classList.add('show'); }
 function hide(){ modal.classList.remove('show'); }
 
-const ENCOUNTER = {
-  title:"Late Submission Dilemma",
-  scenario:"A student is overwhelmed and asks for an extension on tonight’s lab report.",
-  choices:[
-    "Decline to keep policy consistent.",
-    "Offer a 24-hour grace period with a plan.",
-    "Give a full week with no conditions."
-  ],
-  correct_index:1,
-  feedback:[
-    "Consistency matters, but structured flexibility builds equity. Try a supportive option.",
-    "Nice. You preserved expectations while scaffolding autonomy—very UDL.",
-    "Caring impulse! Add structure so learning stays on track."
-  ]
-};
+/* ---------- Encounters (with reflection) ---------- */
+const ENCOUNTERS = [
+  {
+    id:"hall-001",
+    title:"Late Submission Dilemma",
+    scenario:"A student is overwhelmed and asks for an extension on tonight’s lab report.",
+    choices:[
+      "Decline to keep policy consistent.",
+      "Offer a 24-hour grace period with a plan.",
+      "Give a full week with no conditions."
+    ],
+    correct_index:1,
+    theory_tags:["UDL","Formative Assessment","Trauma-Informed"],
+    feedback:[
+      "Consistency matters, but structured flexibility builds equity. Try a supportive option.",
+      "Nice. You preserved expectations while scaffolding autonomy—very UDL.",
+      "Caring impulse! Add structure so learning stays on track."
+    ]
+  },
+  {
+    id:"hall-002",
+    title:"Phones in Class",
+    scenario:"Two students are on their phones during a demonstration.",
+    choices:[
+      "Pause and set a collaborative norm for focus.",
+      "Confiscate the phones immediately.",
+      "Ignore it and continue."
+    ],
+    correct_index:0,
+    theory_tags:["Constructivism","Classroom Management","4As: Activate"],
+    feedback:[
+      "Yes—co-creating norms builds buy-in and attention.",
+      "Enforcement alone may spark resistance—invite ownership first.",
+      "Silence can signal acceptance. Try a quick norms reset."
+    ]
+  },
+  {
+    id:"hall-003",
+    title:"Abstract Lectures",
+    scenario:"Learners say content feels abstract and ask for more hands-on.",
+    choices:[
+      "Add a weekly mini-lab applying the concept.",
+      "Double the lecture time to cover fundamentals.",
+      "Assign extra reading."
+    ],
+    correct_index:0,
+    theory_tags:["Experiential Learning","Constructivism","4As: Apply"],
+    feedback:[
+      "Exactly—application cements understanding.",
+      "More theory won’t fix a lack of practice.",
+      "Reading helps, but practice drives transfer."
+    ]
+  }
+];
+
+function randomEncounter(){ return ENCOUNTERS[Math.floor(Math.random()*ENCOUNTERS.length)]; }
 
 function tryInteract(){
   const ax = player.x + Math.cos(player.a)*0.5;
@@ -264,42 +300,92 @@ function tryInteract(){
   if (hit===3) openEncounter();
   if (hit===2) nextLevel();
 }
+
 function openEncounter(){
-  function render(feedback){
+  const q = randomEncounter();
+  // clear triggered tile so it won't reopen instantly
+  const tx=Math.floor(player.x + Math.cos(player.a)*0.5);
+  const ty=Math.floor(player.y + Math.sin(player.a)*0.5);
+  const row = map[ty].split(""); row[tx]='.'; map[ty]=row.join("");
+
+  function renderProblem(feedback){
     show(`
-      <h2>${ENCOUNTER.title}</h2>
-      <p>${ENCOUNTER.scenario}</p>
+      <h2>${q.title}</h2>
+      <p>${q.scenario}</p>
       <div class="choices">
-        ${ENCOUNTER.choices.map((c,i)=>`<button data-i="${i}">${c}</button>`).join('')}
+        ${q.choices.map((c,i)=>`<button data-i="${i}">${c}</button>`).join('')}
       </div>
       ${feedback?`<div class="feedback">${feedback}</div>`:''}
     `);
     card.querySelectorAll('button[data-i]').forEach(b=>{
       b.onclick=()=>{
         const i=+b.dataset.i;
-        if(i===ENCOUNTER.correct_index){
-          state.score+=100; scoreEl.textContent=state.score; hide();
+        if(i===q.correct_index){
+          state.score+=100; scoreEl.textContent=state.score;
+          renderTheory();
         }else{
           state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score;
-          render(ENCOUNTER.feedback[i]);
+          renderProblem(q.feedback[i]||"Good thinking—consider learner needs and try again.");
         }
       };
     });
   }
-  // remove the encounter tile just triggered (prevent instant re-open)
-  const tx=Math.floor(player.x + Math.cos(player.a)*0.5);
-  const ty=Math.floor(player.y + Math.sin(player.a)*0.5);
-  const row = map[ty].split(""); row[tx]='.'; map[ty]=row.join("");
-  render();
+
+  function renderTheory(feedback){
+    const allTags = Array.from(new Set(q.theory_tags.concat(["Summative Assessment"])));
+    show(`
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <img src="FDC Double Dragon.png" alt="" class="poster" onerror="this.style.display='none'">
+        <div style="flex:1">
+          <h2>Reflection: Which theory best aligns?</h2>
+          <p>Pick the theory or framework that best explains your action.</p>
+          <div class="choices">
+            ${shuffle(allTags).map(t=>`<button data-t="${t}">${t}</button>`).join('')}
+          </div>
+          ${feedback?`<div class="feedback">${feedback}</div>`:''}
+          <div class="badge-row" id="badgeRow"></div>
+        </div>
+      </div>
+    `);
+    const badgeRow = document.getElementById('badgeRow');
+    function repaintBadges(){
+      badgeRow.innerHTML = [...state.badges].map(b=>`<span class="badge">${b}</span>`).join('');
+    }
+    repaintBadges();
+
+    card.querySelectorAll('button[data-t]').forEach(b=>{
+      b.onclick=()=>{
+        const t=b.dataset.t;
+        if(q.theory_tags.includes(t)){
+          state.badges.add(t);
+          badgeEl.textContent = state.badges.size;
+          state.score+=50; scoreEl.textContent=state.score;
+          repaintBadges();
+          hide();
+        }else{
+          state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score;
+          renderTheory(`Nice! The stronger match is likely one of: <strong>${q.theory_tags.join(', ')}</strong>. Try again!`);
+        }
+      };
+    });
+  }
+
+  renderProblem();
 }
+
 function nextLevel(){
   if (state.level<3){
     state.level++; levelEl.textContent=state.level;
     map = levels[state.level-1].map; rows=map.length; cols=map[0].length;
     player.x=2.5; player.y=2.5; player.a=0;
+    // small toast:
+    show(`<h2>Level ${state.level}</h2><p>Head for the exit and support more students on the way.</p>
+          <div class="choices"><button onclick="document.querySelector('.modal').classList.remove('show')">Start</button></div>`);
   } else {
+    const list=[...state.badges].map(b=>`<span class="badge">${b}</span>`).join('');
     show(`<h2>Classroom Reached! ✅</h2>
           <p>Score: <strong>${state.score}</strong></p>
+          <div>Badges earned: <div class="badge-row">${list||"<em>None (yet)</em>"}</div></div>
           <div class="choices"><button onclick="location.reload()">Restart</button>
           <button onclick="document.querySelector('.modal').classList.remove('show')">Close</button></div>`);
   }
@@ -308,8 +394,12 @@ function nextLevel(){
 /* ---------- Audio toggle (stub) ---------- */
 document.getElementById('audioBtn').onclick=()=> {
   const b=document.getElementById('audioBtn');
-  b.textContent = b.textContent.includes('🔈') ? '🔊 Audio' : '🔈 Audio';
+  state.audioOn = !state.audioOn;
+  b.textContent = state.audioOn ? '🔊 Audio' : '🔈 Audio';
 };
+
+/* ---------- Utils ---------- */
+function shuffle(a){ const arr=a.slice(); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
 </script>
 </body>
 </html>
