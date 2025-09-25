@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Instructor Quest — Phase 3 (Minimap+Debug)</title>
+<title>Instructor Quest — Phase 3 (Hardened)</title>
 <style>
   :root{ --bg:#0c0f17; --line:#243046; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
@@ -16,12 +16,11 @@
   header .grow{flex:1}
   header .btn{background:#141c2c;border:1px solid #23304a;color:var(--text);
     padding:.4rem .6rem;border-radius:.5rem;cursor:pointer;font-weight:700;letter-spacing:.3px}
-  header .btn:hover{border-color:#3a4e79}
 
   /* Layout */
   .wrap{display:grid;grid-template-rows:auto 1fr;height:100vh;}
   #game{position:relative;background:#000;min-height:480px;height:calc(100vh - 64px);}
-  #view{display:block;width:100%;height:100%;}
+  #view{display:block;width:100%;height:100%; background:#000;} /* force opaque base */
 
   /* HUD + debug */
   .hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;gap:.5rem;padding:.4rem .6rem;pointer-events:none}
@@ -29,13 +28,11 @@
   #err{position:absolute;right:.6rem;top:.6rem;background:#7f1d1d;border:1px solid #ef4444;display:none}
   #dbg{position:absolute;left:.6rem;bottom:.6rem;background:#0b1220cc;border:1px solid #334155}
 
-  /* Floating controls */
-  .controls{position:absolute;right:.6rem;bottom:.6rem;display:flex;gap:.5rem;flex-wrap:wrap}
-  .controls .btn{pointer-events:auto;background:#0e1a30;border:1px solid #29476f}
-
-  /* Minimap */
+  /* Minimap + controls */
   #minimap{position:absolute;top:.6rem;right:.6rem;background:#0b1220cc;border:1px solid #334155;border-radius:.4rem;padding:.3rem}
   #minimap canvas{display:block}
+  .controls{position:absolute;right:.6rem;bottom:.6rem;display:flex;gap:.5rem;flex-wrap:wrap}
+  .controls .btn{pointer-events:auto;background:#0e1a30;border:1px solid #29476f}
 
   /* Modal */
   .modal{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);}
@@ -46,7 +43,6 @@
   .card p{margin:.35rem 0;color:var(--muted)}
   .choices{display:grid;gap:.5rem;margin-top:.6rem}
   .choices button{background:#121a2a;border:1px solid #2a3a5a;border-radius:10px;padding:.55rem .7rem;color:#e5e7eb;cursor:pointer;text-align:left}
-  .choices button:hover{border-color:#4663a0}
   .feedback{margin-top:.6rem;padding:.5rem .6rem;border-radius:10px;background:#0c1220;color:#cbd5e1;border:1px solid #243b69}
   .badge-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
   .badge{background:#13223f;border:1px solid #2b4b8a;color:#dbeafe;padding:.25rem .5rem;border-radius:.5rem;font-size:.8rem}
@@ -57,13 +53,13 @@
 <div class="wrap">
   <header>
     <img class="logo" src="assiniboine.png" alt="Assiniboine" onerror="this.style.display='none'">
-    <h1>Instructor Quest — Phase 3 (Minimap)</h1>
+    <h1>Instructor Quest — Phase 3 (Hardened)</h1>
     <div class="grow"></div>
     <button class="btn" id="audioBtn">🔈 Audio</button>
   </header>
 
   <main id="game" aria-label="Wolf3D-like hallway">
-    <canvas id="view" width="960" height="540"></canvas>
+    <canvas id="view" width="960" height="540" tabindex="0" aria-label="Game canvas"></canvas>
 
     <div class="hud">
       <div class="chip">Score: <span id="score">0</span></div>
@@ -79,7 +75,10 @@
 
     <div class="controls">
       <button class="btn" id="rotateBtn">Rotate</button>
-      <button class="btn" id="nudgeBtn">Nudge Forward</button>
+      <button class="btn" id="nudgeBtn">Nudge</button>
+      <button class="btn" id="leftBtn">◀</button>
+      <button class="btn" id="rightBtn">▶</button>
+      <button class="btn" id="backBtn">▼</button>
       <button class="btn" id="resetBtn">Reset</button>
     </div>
 
@@ -90,7 +89,7 @@
 <script>
 'use strict';
 
-/* ---------- Error reporter ---------- */
+/* ---------- Errors ---------- */
 (function(){
   const err = document.getElementById('err');
   window.addEventListener('error', e=>{
@@ -99,7 +98,7 @@
   });
 })();
 
-/* ---------- Canvas sizing ---------- */
+/* ---------- Canvas ---------- */
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d', { alpha: false });
 
@@ -117,11 +116,11 @@ function resizeCanvas(){
   W = w; H = h; NUM_RAYS = Math.floor(W/2);
   showDbg();
 }
-function showDbg(){ document.getElementById('dbg').textContent = `W:${W} H:${H} Rays:${NUM_RAYS}  |  x:${player.x.toFixed(2)} y:${player.y.toFixed(2)} a:${player.a.toFixed(2)}`; }
-addEventListener('load', resizeCanvas);
-addEventListener('resize', resizeCanvas);
+function showDbg(){ document.getElementById('dbg').textContent = `W:${W} H:${H} Rays:${NUM_RAYS} | x:${player.x.toFixed(2)} y:${player.y.toFixed(2)} a:${player.a.toFixed(2)}`; }
+addEventListener('load', resizeCanvas, {passive:true});
+addEventListener('resize', resizeCanvas, {passive:true});
 
-/* ---------- World data ---------- */
+/* ---------- World ---------- */
 const state = { level:1, score:0, badges:new Set(), audioOn:false };
 const scoreEl = document.getElementById('score');
 const badgeEl = document.getElementById('badgeCount');
@@ -193,10 +192,22 @@ function move(dt){
 
 /* ---------- Render ---------- */
 function drawWorld(){
+  // Force normal compositing and fully repaint the canvas
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Hard clear and black base (eliminates any theme color bleed)
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0,0,W,H);
+
   // sky/floor
   ctx.fillStyle='#0b1020'; ctx.fillRect(0,0,W,H/2);
   ctx.fillStyle='#0a0d17'; ctx.fillRect(0,H/2,W,H/2);
 
+  // wall slices
   let anyHit=false;
   for(let r=0;r<NUM_RAYS;r++){
     const rayAngle=(player.a - FOV/2) + (r/NUM_RAYS)*FOV;
@@ -209,20 +220,21 @@ function drawWorld(){
     const x = Math.floor((r/NUM_RAYS)*W);
     ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,h);
 
-    if(hit){ anyHit=true; }
-    if(hit===2){ ctx.fillStyle=varAccent(); ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,2); ctx.fillRect(x,(H+h)/2-2,Math.ceil(W/NUM_RAYS)+1,2); }
+    if(hit) anyHit=true;
+    if(hit===2){ ctx.fillStyle='#38bdf8'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,2); ctx.fillRect(x,(H+h)/2-2,Math.ceil(W/NUM_RAYS)+1,2); }
     if(hit===3){ ctx.fillStyle='rgba(239,68,68,.85)'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,1); }
   }
 
-  if(!anyHit){
-    ctx.fillStyle='#ef4444'; ctx.font='bold 18px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial';
-    ctx.fillText('NO HITS — rays did not find walls. (Map/scale?)', 12, 24);
-  }
-
   // live label
-  ctx.fillStyle='rgba(255,255,255,.9)';
+  ctx.fillStyle='rgba(255,255,255,.95)';
   ctx.font='bold 16px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial';
-  ctx.fillText('PHASE 3 (minimap build)', 12, 46);
+  ctx.fillText(anyHit?'Hallway rendering…':'NO HITS — check map', 12, 24);
+
+  // crosshair (proves redraw each frame)
+  ctx.fillRect(W/2-1, H/2-8, 2, 16);
+  ctx.fillRect(W/2-8, H/2-1, 16, 2);
+
+  ctx.restore();
 }
 
 /* ---------- Minimap ---------- */
@@ -242,12 +254,10 @@ function drawMinimap(){
       mctx.fillRect(x*scaleX, y*scaleY, scaleX-1, scaleY-1);
     }
   }
-  // player
   mctx.fillStyle='#22c55e';
   mctx.beginPath();
   mctx.arc(player.x*scaleX, player.y*scaleY, 2.5, 0, Math.PI*2);
   mctx.fill();
-  // FOV line
   mctx.strokeStyle='#22c55e';
   mctx.beginPath();
   mctx.moveTo(player.x*scaleX, player.y*scaleY);
@@ -255,7 +265,7 @@ function drawMinimap(){
   mctx.stroke();
 }
 
-/* ---------- Game loop ---------- */
+/* ---------- Loop ---------- */
 function loop(t){
   try{
     const dt=Math.min(0.05,(t-lastTime)/1000); lastTime=t;
@@ -269,7 +279,7 @@ function loop(t){
 }
 requestAnimationFrame(loop);
 
-/* ---------- Input ---------- */
+/* ---------- Input (bind to document for reliability) ---------- */
 const keys={};
 function updateIntent(){
   player.fwd   = (keys['KeyW']||keys['ArrowUp']?1:0) + (keys['KeyS']||keys['ArrowDown']?-1:0);
@@ -277,70 +287,49 @@ function updateIntent(){
   player.rot   = (keys['ArrowRight']?1:0) + (keys['ArrowLeft']?-1:0);
   if (keys['KeyE']) tryInteract();
 }
-addEventListener('keydown',e=>{
+document.addEventListener('keydown',e=>{
   if(['KeyW','KeyS','ArrowUp','ArrowDown','KeyA','KeyD','ArrowLeft','ArrowRight','KeyE'].includes(e.code)) e.preventDefault();
   keys[e.code]=true; updateIntent();
-});
-addEventListener('keyup',e=>{ keys[e.code]=false; updateIntent(); });
-canvas.addEventListener('mousemove',e=>{
-  if (document.pointerLockElement===canvas) player.a += e.movementX*0.0025;
-});
-canvas.addEventListener('click',()=>canvas.requestPointerLock());
+}, {passive:false});
+document.addEventListener('keyup',e=>{ keys[e.code]=false; updateIntent(); }, {passive:true});
+canvas.addEventListener('click',()=>{ canvas.focus(); canvas.requestPointerLock?.(); });
 
-/* ---------- Buttons (prove render/move even if keys blocked) ---------- */
+/* ---------- Buttons ---------- */
 let autoRotate=false;
 document.getElementById('rotateBtn').onclick=()=>{ autoRotate=!autoRotate; document.getElementById('rotateBtn').textContent = autoRotate? 'Stop Rotate':'Rotate'; };
 document.getElementById('nudgeBtn').onclick=()=>{ player.fwd=1; setTimeout(()=>{ player.fwd=0; }, 250); };
+document.getElementById('leftBtn').onclick=()=>{ player.strafe=-1; setTimeout(()=>player.strafe=0, 200); };
+document.getElementById('rightBtn').onclick=()=>{ player.strafe= 1; setTimeout(()=>player.strafe=0, 200); };
+document.getElementById('backBtn').onclick=()=>{ player.fwd=-1; setTimeout(()=>player.fwd=0, 250); };
 document.getElementById('resetBtn').onclick=()=>{ player.x=2.5; player.y=2.5; player.a=0; };
 
-(function spin(){
-  if(autoRotate) player.a += 0.02;
-  requestAnimationFrame(spin);
-})();
-
-/* ---------- Modal helpers ---------- */
+/* ---------- Modal helpers + Encounters (same as before) ---------- */
 const modal=document.getElementById('modal'), card=document.getElementById('card');
 function show(html){ card.innerHTML=html; modal.classList.add('show'); }
 function hide(){ modal.classList.remove('show'); }
 
-/* ---------- Encounters (with reflection) ---------- */
 const ENCOUNTERS = [
-  {
-    id:"hall-001",
-    title:"Late Submission Dilemma",
+  { id:"hall-001", title:"Late Submission Dilemma",
     scenario:"A student is overwhelmed and asks for an extension on tonight’s lab report.",
-    choices:[
-      "Decline to keep policy consistent.",
-      "Offer a 24-hour grace period with a plan.",
-      "Give a full week with no conditions."
-    ],
+    choices:["Decline to keep policy consistent.","Offer a 24-hour grace period with a plan.","Give a full week with no conditions."],
     correct_index:1,
     theory_tags:["UDL","Formative Assessment","Trauma-Informed"],
     feedback:[
       "Consistency matters, but structured flexibility builds equity. Try a supportive option.",
       "Nice. You preserved expectations while scaffolding autonomy—very UDL.",
       "Caring impulse! Add structure so learning stays on track."
-    ]
-  },
-  {
-    id:"hall-002",
-    title:"Phones in Class",
+    ]},
+  { id:"hall-002", title:"Phones in Class",
     scenario:"Two students are on their phones during a demonstration.",
-    choices:[
-      "Pause and set a collaborative norm for focus.",
-      "Confiscate the phones immediately.",
-      "Ignore it and continue."
-    ],
+    choices:["Pause and set a collaborative norm for focus.","Confiscate the phones immediately.","Ignore it and continue."],
     correct_index:0,
     theory_tags:["Constructivism","Classroom Management","4As: Activate"],
     feedback:[
       "Yes—co-creating norms builds buy-in and attention.",
       "Enforcement alone may spark resistance—invite ownership first.",
       "Silence can signal acceptance. Try a quick norms reset."
-    ]
-  }
+    ]}
 ];
-
 function randomEncounter(){ return ENCOUNTERS[Math.floor(Math.random()*ENCOUNTERS.length)]; }
 
 function tryInteract(){
@@ -350,79 +339,44 @@ function tryInteract(){
   if (hit===3) openEncounter();
   if (hit===2) nextLevel();
 }
-
 function openEncounter(){
   const q = randomEncounter();
-  // clear triggered tile so it won't reopen instantly
   const tx=Math.floor(player.x + Math.cos(player.a)*0.5);
   const ty=Math.floor(player.y + Math.sin(player.a)*0.5);
   const row = map[ty].split(""); row[tx]='.'; map[ty]=row.join("");
 
   function renderProblem(feedback){
-    show(`
-      <h2>${q.title}</h2>
-      <p>${q.scenario}</p>
-      <div class="choices">
-        ${q.choices.map((c,i)=>`<button data-i="${i}">${c}</button>`).join('')}
-      </div>
-      ${feedback?`<div class="feedback">${feedback}</div>`:''}
-    `);
+    show(`<h2>${q.title}</h2><p>${q.scenario}</p>
+      <div class="choices">${q.choices.map((c,i)=>`<button data-i="${i}">${c}</button>`).join('')}</div>
+      ${feedback?`<div class="feedback">${feedback}</div>`:''}`);
     card.querySelectorAll('button[data-i]').forEach(b=>{
-      b.onclick=()=>{
-        const i=+b.dataset.i;
-        if(i===q.correct_index){
-          state.score+=100; scoreEl.textContent=state.score;
-          renderTheory();
-        }else{
-          state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score;
-          renderProblem(q.feedback[i]||"Good thinking—consider learner needs and try again.");
-        }
+      b.onclick=()=>{ const i=+b.dataset.i;
+        if(i===q.correct_index){ state.score+=100; scoreEl.textContent=state.score; renderTheory(); }
+        else{ state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score; renderProblem(q.feedback[i]); }
       };
     });
   }
-
   function renderTheory(feedback){
     const allTags = Array.from(new Set(q.theory_tags.concat(["Summative Assessment"])));
-    show(`
-      <div style="display:flex;gap:12px;align-items:flex-start">
+    show(`<div style="display:flex;gap:12px;align-items:flex-start">
         <img src="fdcdoubledragon.png" alt="" class="poster" onerror="this.style.display='none'">
-        <div style="flex:1">
-          <h2>Reflection: Which theory best aligns?</h2>
+        <div style="flex:1"><h2>Reflection: Which theory best aligns?</h2>
           <p>Pick the theory or framework that best explains your action.</p>
-          <div class="choices">
-            ${shuffle(allTags).map(t=>`<button data-t="${t}">${t}</button>`).join('')}
-          </div>
+          <div class="choices">${shuffle(allTags).map(t=>`<button data-t="${t}">${t}</button>`).join('')}</div>
           ${feedback?`<div class="feedback">${feedback}</div>`:''}
-          <div class="badge-row" id="badgeRow"></div>
-        </div>
-      </div>
-    `);
+          <div class="badge-row" id="badgeRow"></div></div></div>`);
     const badgeRow = document.getElementById('badgeRow');
-    function repaintBadges(){
-      badgeRow.innerHTML = [...state.badges].map(b=>`<span class="badge">${b}</span>`).join('');
-    }
-    repaintBadges();
-
+    function repaint(){ badgeRow.innerHTML = [...state.badges].map(b=>`<span class="badge">${b}</span>`).join(''); }
+    repaint();
     card.querySelectorAll('button[data-t]').forEach(b=>{
-      b.onclick=()=>{
-        const t=b.dataset.t;
-        if(q.theory_tags.includes(t)){
-          state.badges.add(t);
-          badgeEl.textContent = state.badges.size;
-          state.score+=50; scoreEl.textContent=state.score;
-          repaintBadges();
-          hide();
-        }else{
-          state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score;
-          renderTheory(`Nice! The stronger match is likely one of: <strong>${q.theory_tags.join(', ')}</strong>. Try again!`);
-        }
+      b.onclick=()=>{ const t=b.dataset.t;
+        if(q.theory_tags.includes(t)){ state.badges.add(t); badgeEl.textContent=state.badges.size; state.score+=50; scoreEl.textContent=state.score; repaint(); hide(); }
+        else{ state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score; renderTheory(`Stronger match is likely one of: <strong>${q.theory_tags.join(', ')}</strong>. Try again!`); }
       };
     });
   }
-
   renderProblem();
 }
-
 function nextLevel(){
   if (state.level<3){
     state.level++; levelEl.textContent=state.level;
@@ -432,9 +386,8 @@ function nextLevel(){
           <div class="choices"><button onclick="document.querySelector('.modal').classList.remove('show')">Start</button></div>`);
   } else {
     const list=[...state.badges].map(b=>`<span class="badge">${b}</span>`).join('');
-    show(`<h2>Classroom Reached! ✅</h2>
-          <p>Score: <strong>${state.score}</strong></p>
-          <div>Badges earned: <div class="badge-row">${list||"<em>None (yet)</em>"}</div></div>
+    show(`<h2>Classroom Reached! ✅</h2><p>Score: <strong>${state.score}</strong></p>
+          <div>Badges earned: <div class="badge-row">${list||"<em>None</em>"}</div></div>
           <div class="choices"><button onclick="location.reload()">Restart</button>
           <button onclick="document.querySelector('.modal').classList.remove('show')">Close</button></div>`);
   }
@@ -448,7 +401,6 @@ document.getElementById('audioBtn').onclick=()=> {
 };
 
 /* ---------- Utils ---------- */
-function varAccent(){ return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#38bdf8'; }
 function shuffle(a){ const arr=a.slice(); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
 </script>
 </body>
