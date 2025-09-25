@@ -3,28 +3,28 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Instructor Quest — Phase 2</title>
+<title>Instructor Quest — Phase 2B (Debug)</title>
 <style>
   :root{ --bg:#0c0f17; --line:#243046; --text:#e5e7eb; --muted:#94a3b8; }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
-
   /* Header */
-  header{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;
-    border-bottom:1px solid var(--line);background:linear-gradient(180deg,#121a2a,#0e1422);}
+  header{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#121a2a,#0e1422);}
   header img.logo{height:32px}
   header h1{margin:0;font-size:1.05rem;font-weight:800}
   header .grow{flex:1}
-  header .btn{background:#141c2c;border:1px solid #23304a;color:var(--text);
-    padding:.4rem .6rem;border-radius:.5rem;cursor:pointer;font-weight:700;letter-spacing:.3px}
+  header .btn{background:#141c2c;border:1px solid #23304a;color:var(--text);padding:.4rem .6rem;border-radius:.5rem;cursor:pointer;font-weight:700;letter-spacing:.3px}
 
   /* Layout */
   .wrap{display:grid;grid-template-rows:auto 1fr;height:100vh;}
   #game{position:relative;background:#000;min-height:480px;height:calc(100vh - 64px);}
   #view{display:block;width:100%;height:100%;}
 
-  /* HUD + chips */
+  /* HUD + debug */
   .hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;gap:.5rem;padding:.4rem .6rem;pointer-events:none}
   .chip{pointer-events:auto;background:#0009;border:1px solid #334155;color:#e2e8f0;border-radius:.45rem;padding:.25rem .45rem;font-size:.85rem}
+  #err{position:absolute;right:.6rem;top:.6rem;background:#7f1d1d;border:1px solid #ef4444;display:none}
+  #dbg{position:absolute;left:.6rem;bottom:.6rem;background:#0b1220cc;border:1px solid #334155}
 
   /* Modal */
   .modal{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);}
@@ -57,14 +57,29 @@
       <div class="chip">Click canvas → mouse-look • WASD move • <strong>E</strong> interact</div>
     </div>
 
+    <div id="err" class="chip"></div>
+    <div id="dbg" class="chip">dbg</div>
+
     <div class="modal" id="modal"><div class="card" id="card"></div></div>
   </main>
 </div>
 
 <script>
-/* ---------- Canvas sizing (same reliable approach) ---------- */
+'use strict';
+
+/* ---------- On-page error reporter ---------- */
+(function(){
+  const err = document.getElementById('err');
+  window.addEventListener('error', e=>{
+    err.style.display='block';
+    err.textContent = 'JS error: ' + (e.message || '(unknown)');
+  });
+})();
+
+/* ---------- Canvas sizing (robust) ---------- */
 const canvas = document.getElementById('view');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: false });
+
 let W = canvas.width, H = canvas.height;
 const FOV = Math.PI/3;
 let NUM_RAYS = Math.floor(W/2);
@@ -74,14 +89,24 @@ function resizeCanvas(){
   const game = document.getElementById('game');
   let w = game.clientWidth || 960;
   let h = game.clientHeight || 540;
-  if (!h || h < 200) h = 560;
-  canvas.width = w; canvas.height = h;
+  if (!h || h < 240) h = 560;          // hard fallback
+  canvas.width = w; canvas.height = h; // important: set pixel size
   W = w; H = h; NUM_RAYS = Math.floor(W/2);
+  paintBackground();                    // paint immediately so we SEE it
+  showDbg();
+}
+function paintBackground(){
+  // obvious background to prove canvas is alive
+  ctx.fillStyle = '#0ea5a5'; ctx.fillRect(0,0,W,H/2);
+  ctx.fillStyle = '#0b1430'; ctx.fillRect(0,H/2,W,H/2);
+}
+function showDbg(){
+  document.getElementById('dbg').textContent = `W:${W} H:${H} Rays:${NUM_RAYS}`;
 }
 addEventListener('load', resizeCanvas);
 addEventListener('resize', resizeCanvas);
 
-/* ---------- Minimal raycaster ---------- */
+/* ---------- World data ---------- */
 const state = { level:1, score:0 };
 const scoreEl = document.getElementById('score');
 const levelEl = document.getElementById('level');
@@ -121,12 +146,12 @@ const levels = [
 let map = levels[0].map, cols = map[0].length, rows = map.length;
 
 const player = { x:2.5, y:2.5, a:0, fwd:0, strafe:0, rot:0, speed:2.2 };
-let lastTime = performance.now();
 
+/* ---------- Helpers ---------- */
 function tileAt(x,y){
   const xi=Math.floor(x), yi=Math.floor(y);
-  if(xi<0||yi<0||yi>=rows||xi>=cols) return 1;
-  const ch = map[yi][xi];
+  if (xi<0||yi<0||yi>=rows||xi>=cols) return 1;
+  const ch=map[yi][xi];
   return ch==='.'?0:(ch==='E'?2:(ch==='3'?3:1));
 }
 function castRay(angle){
@@ -138,6 +163,9 @@ function castRay(angle){
   }
   return {depth,hit};
 }
+
+/* ---------- Movement ---------- */
+let lastTime = performance.now();
 function move(dt){
   const step = player.speed*dt;
   const nx = player.x + (Math.cos(player.a)*player.fwd + Math.cos(player.a+Math.PI/2)*player.strafe)*step;
@@ -146,6 +174,8 @@ function move(dt){
   if (tileAt(player.x,ny)===0) player.y=ny;
   player.a += player.rot*dt*2.2;
 }
+
+/* ---------- Render ---------- */
 function drawWorld(){
   // sky/floor
   ctx.fillStyle='#0b1020'; ctx.fillRect(0,0,W,H/2);
@@ -153,7 +183,7 @@ function drawWorld(){
 
   for(let r=0;r<NUM_RAYS;r++){
     const rayAngle=(player.a - FOV/2) + (r/NUM_RAYS)*FOV;
-    const {depth,hit}=castRay(rayAngle);
+    const {depth,hit} = castRay(rayAngle);
     const dist = depth*Math.cos(rayAngle - player.a);
     const h = Math.min(H, (H/(dist+0.0001)));
     const shade = Math.max(0, 1 - dist/MAX_DEPTH);
@@ -162,15 +192,23 @@ function drawWorld(){
     const x = Math.floor((r/NUM_RAYS)*W);
     ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,h);
 
-    // highlights for special tiles
+    // highlights
     if(hit===2){ ctx.fillStyle='#38bdf8'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,2); ctx.fillRect(x,(H+h)/2-2,Math.ceil(W/NUM_RAYS)+1,2); }
-    if(hit===3){ ctx.fillStyle='rgba(239,68,68,.8)'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,1); }
+    if(hit===3){ ctx.fillStyle='rgba(239,68,68,.85)'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,1); }
   }
 }
 
+/* ---------- Game loop (with try/catch to surface errors) ---------- */
 function loop(t){
-  const dt=Math.min(0.05,(t-lastTime)/1000); lastTime=t;
-  move(dt); drawWorld(); requestAnimationFrame(loop);
+  try{
+    const dt=Math.min(0.05,(t-lastTime)/1000); lastTime=t;
+    move(dt); drawWorld();
+    requestAnimationFrame(loop);
+  }catch(e){
+    const err=document.getElementById('err');
+    err.style.display='block';
+    err.textContent='Loop error: '+e.message;
+  }
 }
 requestAnimationFrame(loop);
 
@@ -180,7 +218,7 @@ function updateIntent(){
   player.fwd   = (keys['KeyW']||keys['ArrowUp']?1:0) + (keys['KeyS']||keys['ArrowDown']?-1:0);
   player.strafe= (keys['KeyD']?1:0) + (keys['KeyA']?-1:0);
   player.rot   = (keys['ArrowRight']?1:0) + (keys['ArrowLeft']?-1:0);
-  if(keys['KeyE']) tryInteract();
+  if (keys['KeyE']) tryInteract();
 }
 addEventListener('keydown',e=>{
   if(['KeyW','KeyS','ArrowUp','ArrowDown','KeyA','KeyD','ArrowLeft','ArrowRight','KeyE'].includes(e.code)) e.preventDefault();
@@ -192,17 +230,10 @@ canvas.addEventListener('mousemove',e=>{
 });
 canvas.addEventListener('click',()=>canvas.requestPointerLock());
 
-/* ---------- Encounter modal (1 working example) ---------- */
+/* ---------- Encounter (one) ---------- */
 const modal=document.getElementById('modal'), card=document.getElementById('card');
 function show(html){ card.innerHTML=html; modal.classList.add('show'); }
 function hide(){ modal.classList.remove('show'); }
-function tryInteract(){
-  const ax = player.x + Math.cos(player.a)*0.5;
-  const ay = player.y + Math.sin(player.a)*0.5;
-  const hit = tileAt(ax,ay);
-  if (hit===3) openEncounter();
-  if (hit===2) nextLevel();
-}
 
 const ENCOUNTER = {
   title:"Late Submission Dilemma",
@@ -220,6 +251,13 @@ const ENCOUNTER = {
   ]
 };
 
+function tryInteract(){
+  const ax = player.x + Math.cos(player.a)*0.5;
+  const ay = player.y + Math.sin(player.a)*0.5;
+  const hit = tileAt(ax,ay);
+  if (hit===3) openEncounter();
+  if (hit===2) nextLevel();
+}
 function openEncounter(){
   function render(feedback){
     show(`
@@ -242,13 +280,12 @@ function openEncounter(){
       };
     });
   }
-  // clear the encounter tile in front so it doesn't retrigger immediately
+  // remove the encounter tile just triggered (prevent instant re-open)
   const tx=Math.floor(player.x + Math.cos(player.a)*0.5);
   const ty=Math.floor(player.y + Math.sin(player.a)*0.5);
   const row = map[ty].split(""); row[tx]='.'; map[ty]=row.join("");
   render();
 }
-
 function nextLevel(){
   if (state.level<3){
     state.level++; levelEl.textContent=state.level;
