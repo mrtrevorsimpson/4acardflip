@@ -6,85 +6,58 @@
 <title>Instructor Quest — Wolf3D-style Teaching Game</title>
 <style>
   :root{
-    --bg:#0c0f17; --panel:#0f172a; --text:#e5e7eb; --muted:#94a3b8; --accent:#ef4444;
-    --brand:#6a1b9a; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --card:#111827ee; --line:#243046;
+    --bg:#0c0f17; --line:#243046; --text:#e5e7eb; --muted:#94a3b8;
   }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
-  .embed header{display:none}
-  header{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,#121a2a,#0e1422);}
-  header img.logo{height:32px;width:auto}
-  header h1{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:.2px}
+  /* header */
+  header{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;
+    border-bottom:1px solid var(--line);background:linear-gradient(180deg,#121a2a,#0e1422);}
+  header img.logo{height:32px}
+  header h1{margin:0;font-size:1.05rem;font-weight:800}
   header .grow{flex:1}
-  header .btn,.hud .btn{background:#141c2c;border:1px solid #23304a;color:var(--text);
+  header .btn{background:#141c2c;border:1px solid #23304a;color:var(--text);
     padding:.4rem .6rem;border-radius:.5rem;cursor:pointer;font-weight:700;letter-spacing:.3px}
-  header .btn:hover,.hud .btn:hover{border-color:#3a4e79}
 
-  /* Layout fix: give the game area a height */
+  /* layout — CRITICAL: give the game area real height */
   .wrap{display:grid;grid-template-rows:auto 1fr;height:100vh;}
-  #game{position:relative;background:#000;isolation:isolate;height:calc(100vh - 56px);} /* header ~56px */
+  #game{position:relative;background:#000;height:calc(100vh - 56px);} /* ~header height */
   #view{display:block;width:100%;height:100%;}
 
-  .hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;
+  /* HUD */
+  .hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;
     padding:.4rem .6rem;pointer-events:none}
-  .hud .left,.hud .right{display:flex;gap:.4rem;align-items:center}
-  .hud .chip{pointer-events:auto;background:#0009;border:1px solid #334155;color:#e2e8f0;border-radius:.45rem;
-    padding:.25rem .45rem;font-size:.85rem}
-  .hud .btn{pointer-events:auto}
+  .chip{pointer-events:auto;background:#0009;border:1px solid #334155;color:#e2e8f0;
+    border-radius:.45rem;padding:.25rem .45rem;font-size:.85rem}
 
-  .modal{position:absolute;inset:0;display:none;opacity:0;place-items:center;background:rgba(0,0,0,.55);}
-  .modal.show{display:grid;animation:fade .15s ease forwards}
-  @keyframes fade{to{opacity:1}}
-  .card{width:min(720px,92vw);max-height:86vh;overflow:auto;background:linear-gradient(180deg,#0f172a,#0b1220);
-    border:1px solid #2a3a5a;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.45);padding:14px;color:var(--text)}
-  .card h2{margin:.1rem 0 .4rem;font-size:1.2rem}
-  .card p{margin:.35rem 0;color:var(--muted)}
+  /* Modal */
+  .modal{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);}
+  .modal.show{display:grid;}
+  .card{width:min(720px,92vw);max-height:86vh;overflow:auto;background:#0f172a;
+    border:1px solid #2a3a5a;border-radius:12px;padding:14px}
   .choices{display:grid;gap:.5rem;margin-top:.6rem}
-  .choices button{text-align:left;background:#121a2a;border:1px solid #2a3a5a;border-radius:10px;padding:.55rem .7rem;
-    color:#e5e7eb;cursor:pointer}
-  .choices button:hover{border-color:#4663a0}
+  .choices button{background:#121a2a;border:1px solid #2a3a5a;border-radius:10px;
+    padding:.55rem .7rem;color:#e5e7eb;cursor:pointer;text-align:left}
   .feedback{margin-top:.6rem;padding:.5rem .6rem;border-radius:10px;background:#0c1220;color:#cbd5e1;border:1px solid #243b69}
-  .badge-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
-  .badge{background:#13223f;border:1px solid #2b4b8a;color:#dbeafe;padding:.25rem .5rem;border-radius:.5rem;font-size:.8rem}
-  .howto{display:grid;gap:.5rem;margin:.3rem 0 .1rem}
-  .howto kbd{background:#0b1220;border:1px solid #273656;border-radius:.35rem;padding:.08rem .35rem;font-weight:700}
-  .a11y{display:flex;gap:.5rem;flex-wrap:wrap;margin-left:.4rem}
-  .a11y .btn{background:#0e1626}
-  .hc body,.hc #view{filter:contrast(1.08) saturate(1.05)}
-  .dyslexia *{font-family:'OpenDyslexic','Atkinson Hyperlegible',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial !important}
-  .reduced .ray{display:none}
-  .endstats{display:grid;gap:.5rem}
-  .poster{max-width:220px;border-radius:10px;border:1px solid #2a3a5a}
-  @media (max-width:720px){ header .a11y{display:none} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <img class="logo" src="assiniboine.png" alt="Assiniboine logo" onerror="this.style.display='none'">
+    <img class="logo" src="assiniboinelogo.PNG" alt="Assiniboine" onerror="this.style.display='none'">
     <h1>Instructor Quest</h1>
     <div class="grow"></div>
-    <div class="a11y">
-      <button class="btn" id="toggleHC" title="High contrast">High contrast</button>
-      <button class="btn" id="toggleDys" title="Dyslexia-friendly font">Dyslexia font</button>
-      <button class="btn" id="toggleMotion" title="Reduce motion">Reduce motion</button>
-    </div>
-    <button class="btn" id="audioBtn" title="Audio on/off">🔈 Audio</button>
+    <button class="btn" id="audioBtn">🔈 Audio</button>
   </header>
 
   <main id="game" aria-label="Wolf3D-like hallway">
-    <canvas id="view" width="960" height="540" aria-hidden="true"></canvas>
+    <canvas id="view" width="960" height="540"></canvas>
 
     <div class="hud">
-      <div class="left">
-        <div class="chip">Score: <span id="score">0</span></div>
-        <div class="chip">Badges: <span id="badgeCount">0</span></div>
-      </div>
-      <div class="right">
-        <div class="chip">Level <span id="level">1</span>/3</div>
-        <div class="chip">WASD + Mouse | <span style="color:#a5b4fc">E</span> to interact</div>
-      </div>
+      <div class="chip">Score: <span id="score">0</span></div>
+      <div class="chip">Badges: <span id="badgeCount">0</span></div>
+      <div class="chip">Level <span id="level">1</span>/3</div>
+      <div class="chip">WASD + Mouse | E to interact</div>
     </div>
 
     <div class="modal" id="modal"><div class="card" id="card"></div></div>
@@ -92,69 +65,42 @@
 </div>
 
 <script>
-(function(){
-  try{ if(window.self!==window.top) document.documentElement.classList.add('embed'); }
-  catch(e){ document.documentElement.classList.add('embed'); }
-})();
-
-/* ------ Canvas sizing (critical fix) ------ */
+/* ---------- Canvas + sizing (no duplicate vars) ---------- */
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
+let W = canvas.width;
+let H = canvas.height;
+const FOV = Math.PI/3;
+let NUM_RAYS = Math.floor(W/2);
+const MAX_DEPTH = 18;
+
 function resizeCanvas(){
   const game = document.getElementById('game');
   const w = game.clientWidth;
   const h = game.clientHeight;
+  // set the real drawing size
   canvas.width = w;
   canvas.height = h;
-  W = w; H = h; NUM_RAYS = Math.floor(W/2);
+  W = w; H = h;
+  NUM_RAYS = Math.floor(W/2);
 }
-let W = canvas.width, H = canvas.height, FOV = Math.PI/3, NUM_RAYS = Math.floor(W/2), MAX_DEPTH = 18;
-window.addEventListener('resize', resizeCanvas);
 window.addEventListener('load', resizeCanvas);
+window.addEventListener('resize', resizeCanvas);
 
-/* ------ Game state ------ */
-const state = { level:1, score:0, badges:new Set(), audioOn:false, reducedMotion:false, highContrast:false, dyslexia:false };
-
+/* ---------- Minimal raycaster ---------- */
+const state = { level:1, score:0, badges:new Set(), audioOn:false };
 const levels = [
-  {name:"Main Hall", map:[
-    "1111111111111111",
-    "1..3....1....3.1",
-    "1.111..11..11..1",
-    "1..1....1......1",
-    "1..1..3.1..3...1",
-    "1..111..1..111.1",
-    "1......E......31",
-    "1111111111111111"
-  ]},
-  {name:"East Wing", map:[
-    "1111111111111111",
-    "1..3...11....3.1",
-    "1.111..11..11..1",
-    "1..1....1.....E1",
-    "1..1..3.1..3...1",
-    "1..111..1..111.1",
-    "1.3...........31",
-    "1111111111111111"
-  ]},
-  {name:"Science Bloc", map:[
-    "1111111111111111",
-    "1..3...11....3.1",
-    "1.111..11..11..1",
-    "1..1....1......1",
-    "1..1..3.1..3...1",
-    "1..111..1..111.1",
-    "1...3....E.....1",
-    "1111111111111111"
-  ]}
+  {map:["1111111111111111","1..3....1....3.1","1.111..11..11..1","1..1....1......1","1..1..3.1..3...1","1..111..1..111.1","1......E......31","1111111111111111"]},
+  {map:["1111111111111111","1..3...11....3.1","1.111..11..11..1","1..1....1.....E1","1..1..3.1..3...1","1..111..1..111.1","1.3...........31","1111111111111111"]},
+  {map:["1111111111111111","1..3...11....3.1","1.111..11..11..1","1..1....1......1","1..1..3.1..3...1","1..111..1..111.1","1...3....E.....1","1111111111111111"]}
 ];
 let map = levels[0].map, cols = map[0].length, rows = map.length;
-
-const player = { x:2.5, y:2.5, a:0, fwd:0, strafe:0, speed:2.2, rot:0 };
+const player = { x:2.5, y:2.5, a:0, fwd:0, strafe:0, rot:0, speed:2.2 };
 let lastTime = performance.now();
 
 function tileAt(x,y){
-  const xi = Math.floor(x), yi = Math.floor(y);
-  if (xi<0||yi<0||yi>=rows||xi>=cols) return 1;
+  const xi=Math.floor(x), yi=Math.floor(y);
+  if(xi<0||yi<0||yi>=rows||xi>=cols) return 1;
   const ch = map[yi][xi];
   return ch==='.'?0:(ch==='E'?2:(ch==='3'?3:1));
 }
@@ -163,219 +109,125 @@ function castRay(angle){
   let rx=player.x, ry=player.y;
   while(depth<MAX_DEPTH){
     rx+=cos*0.02; ry+=sin*0.02; depth+=0.02;
-    hit = tileAt(rx,ry); if(hit===1||hit===2||hit===3) break;
+    hit=tileAt(rx,ry); if(hit===1||hit===2||hit===3) break;
   }
   return {depth,hit};
 }
 function move(dt){
-  const step = player.speed*dt;
-  const nx = player.x + (Math.cos(player.a)*player.fwd + Math.cos(player.a+Math.PI/2)*player.strafe)*step;
-  const ny = player.y + (Math.sin(player.a)*player.fwd + Math.sin(player.a+Math.PI/2)*player.strafe)*step;
-  if(tileAt(nx,player.y)===0) player.x = nx;
-  if(tileAt(player.x,ny)===0) player.y = ny;
+  const step=player.speed*dt;
+  const nx=player.x + (Math.cos(player.a)*player.fwd + Math.cos(player.a+Math.PI/2)*player.strafe)*step;
+  const ny=player.y + (Math.sin(player.a)*player.fwd + Math.sin(player.a+Math.PI/2)*player.strafe)*step;
+  if(tileAt(nx,player.y)===0) player.x=nx;
+  if(tileAt(player.x,ny)===0) player.y=ny;
   player.a += player.rot*dt*2.2;
 }
 function draw(){
   ctx.fillStyle='#0b1020'; ctx.fillRect(0,0,W,H/2);
   ctx.fillStyle='#0a0d17'; ctx.fillRect(0,H/2,W,H/2);
   for(let r=0;r<NUM_RAYS;r++){
-    const rayAngle = (player.a - FOV/2) + (r/NUM_RAYS)*FOV;
-    const {depth,hit} = castRay(rayAngle);
-    const dist = depth*Math.cos(rayAngle - player.a);
-    const h = Math.min(H,(H/(dist+0.0001)));
-    const shade = Math.max(0,1 - dist/MAX_DEPTH);
-    const col = `rgba(${Math.floor(60+120*shade)},${Math.floor(70+90*shade)},${Math.floor(110+120*shade)},1)`;
+    const rayAngle=(player.a - FOV/2) + (r/NUM_RAYS)*FOV;
+    const {depth,hit}=castRay(rayAngle);
+    const dist=depth*Math.cos(rayAngle - player.a);
+    const h=Math.min(H,(H/(dist+0.0001)));
+    const shade=Math.max(0,1 - dist/MAX_DEPTH);
+    const col=`rgba(${Math.floor(60+120*shade)},${Math.floor(70+90*shade)},${Math.floor(110+120*shade)},1)`;
     ctx.fillStyle=col;
-    const x = Math.floor((r/NUM_RAYS)*W);
+    const x=Math.floor((r/NUM_RAYS)*W);
     ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,h);
     if(hit===2){ ctx.fillStyle='#38bdf8'; ctx.fillRect(x,(H-h)/2,Math.ceil(W/NUM_RAYS)+1,2); ctx.fillRect(x,(H+h)/2-2,Math.ceil(W/NUM_RAYS)+1,2); }
   }
 }
 function loop(t){
-  const dt = Math.min(0.05,(t-lastTime)/1000); lastTime=t;
-  move(dt);
-  if(!state.reducedMotion) draw(); else ctx.clearRect(0,0,W,H);
-  requestAnimationFrame(loop);
+  const dt=Math.min(0.05,(t-lastTime)/1000); lastTime=t;
+  move(dt); draw(); requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-/* ------ Input ------ */
+/* ---------- Input ---------- */
 const keys={};
 function updateIntent(){
-  player.fwd = (keys['KeyW']||keys['ArrowUp']?1:0) + (keys['KeyS']||keys['ArrowDown']?-1:0);
-  player.strafe = (keys['KeyD']?1:0) + (keys['KeyA']?-1:0);
-  player.rot = (keys['ArrowRight']?1:0) + (keys['ArrowLeft']?-1:0);
+  player.fwd=(keys['KeyW']||keys['ArrowUp']?1:0) + (keys['KeyS']||keys['ArrowDown']?-1:0);
+  player.strafe=(keys['KeyD']?1:0) + (keys['KeyA']?-1:0);
+  player.rot=(keys['ArrowRight']?1:0) + (keys['ArrowLeft']?-1:0);
   if(keys['KeyE']) tryInteract();
 }
-window.addEventListener('keydown',e=>{
+addEventListener('keydown',e=>{
   if(['KeyW','KeyS','ArrowUp','ArrowDown','KeyA','KeyD','ArrowLeft','ArrowRight','KeyE'].includes(e.code)) e.preventDefault();
   keys[e.code]=true; updateIntent();
 });
-window.addEventListener('keyup',e=>{ keys[e.code]=false; updateIntent(); });
-const gameEl = document.getElementById('game');
-gameEl.addEventListener('mousemove', e=>{
+addEventListener('keyup',e=>{ keys[e.code]=false; updateIntent(); });
+canvas.addEventListener('mousemove',e=>{
   if (document.pointerLockElement===canvas) player.a += e.movementX*0.0025;
 });
-gameEl.addEventListener('click', ()=>canvas.requestPointerLock());
+canvas.addEventListener('click',()=>canvas.requestPointerLock());
 
-/* ------ Encounters UI ------ */
+/* ---------- Encounters (kept minimal so we know it runs) ---------- */
 const modal=document.getElementById('modal'), card=document.getElementById('card');
 const scoreEl=document.getElementById('score'), badgeEl=document.getElementById('badgeCount'), levelEl=document.getElementById('level');
+
+const ENCOUNTERS=[{
+  id:"hall-001",
+  title:"Late Submission Dilemma",
+  scenario:"A student is overwhelmed and asks for an extension on tonight’s lab report.",
+  choices:["Decline to keep policy consistent.","Offer a 24-hour grace period with a plan.","Give a full week with no conditions."],
+  correct_index:1,
+  theory_tags:["UDL","Formative Assessment","Trauma-Informed"],
+  feedback:[
+    "Consistency matters, but structured flexibility builds equity. Try a supportive option.",
+    "Nice. You preserved expectations while scaffolding autonomy—very UDL.",
+    "Caring impulse! Add structure so learning stays on track."
+  ]
+}];
+
 function show(html){ card.innerHTML=html; modal.classList.add('show'); }
 function hide(){ modal.classList.remove('show'); }
+function tileAhead(){
+  const ax = player.x + Math.cos(player.a)*0.5;
+  const ay = player.y + Math.sin(player.a)*0.5;
+  return tileAt(ax,ay);
+}
 function tryInteract(){
-  const ax = player.x + Math.cos(player.a)*0.5, ay = player.y + Math.sin(player.a)*0.5;
-  const hit = tileAt(ax,ay);
-  if(hit===3) openEncounter();
-  if(hit===2) nextLevel();
+  const hit=tileAhead();
+  if(hit===3){ openEncounter(); }
+  if(hit===2){ nextLevel(); }
 }
 function openEncounter(){
-  const q = randomEncounter();
+  const q = ENCOUNTERS[0];
   function renderProblem(feedback){
-    show(`
-      <h2>${q.title}</h2>
-      <p>${q.scenario}</p>
+    show(`<h2>${q.title}</h2><p>${q.scenario}</p>
       <div class="choices">
         ${q.choices.map((c,i)=>`<button data-i="${i}">${c}</button>`).join('')}
-      </div>
-      ${feedback?`<div class="feedback">${feedback}</div>`:''}
-    `);
+      </div>${feedback?`<div class="feedback">${feedback}</div>`:''}`);
     card.querySelectorAll('button[data-i]').forEach(b=>{
-      b.onclick=()=>{
-        const i=+b.dataset.i;
-        if(i===q.correct_index){ state.score+=100; scoreEl.textContent=state.score; renderTheory(); chime(true); }
+      b.onclick=()=>{ const i=+b.dataset.i;
+        if(i===q.correct_index){ state.score+=100; scoreEl.textContent=state.score; hide(); }
         else{ state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score;
-              renderProblem(q.feedback[i]||"Great thinking—consider learner needs and try again."); chime(false); }
-      };
-    });
-  }
-  function renderTheory(feedback){
-    const tags = Array.from(new Set(q.theory_tags.concat(["Summative Assessment"])));
-    show(`
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <img src="fdcdoubledragon.png" alt="" class="poster" onerror="this.style.display='none'">
-        <div style="flex:1">
-          <h2>Reflection: Which theory best aligns?</h2>
-          <p>Pick the theory or framework that best explains your action.</p>
-          <div class="choices">
-            ${shuffle(tags).map(t=>`<button data-t="${t}">${t}</button>`).join('')}
-          </div>
-          ${feedback?`<div class="feedback">${feedback}</div>`:''}
-        </div>
-      </div>
-    `);
-    card.querySelectorAll('button[data-t]').forEach(b=>{
-      b.onclick=()=>{
-        const t=b.dataset.t;
-        if(q.theory_tags.includes(t)){ state.badges.add(t); badgeEl.textContent=state.badges.size; state.score+=50; scoreEl.textContent=state.score; hide(); }
-        else{ state.score=Math.max(0,state.score-10); scoreEl.textContent=state.score;
-              renderTheory(`Nice! The stronger match is likely one of: <strong>${q.theory_tags.join(', ')}</strong>. Try again!`); }
+              renderProblem(q.feedback[i]||"Good thinking—consider needs and try again."); }
       };
     });
   }
   renderProblem();
 }
 function nextLevel(){
-  if(state.level<3){ state.level++; levelEl.textContent=state.level; map=levels[state.level-1].map; rows=map.length; cols=map[0].length;
-    player.x=2.5; player.y=2.5; player.a=0; toastEnd(false);
-  }else{ toastEnd(true); }
-}
-function toastEnd(final){
-  const list=[...state.badges].map(b=>`<span class="badge">${b}</span>`).join('');
-  show(`
-    <div class="endstats">
-      <h2>${final?"Classroom Reached! ✅":"Level Complete"}</h2>
-      <p>Score: <strong>${state.score}</strong></p>
-      <div>Badges earned: <div class="badge-row">${list||"<em>None (yet)</em>"}</div></div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${final?`<button class="btn" id="restart">Restart</button>`:`<button class="btn" id="continue">Continue</button>`}
-        <button class="btn" id="close">Close</button>
-      </div>
-    </div>
-  `);
-  document.getElementById('close').onclick=hide;
-  const cont=document.getElementById('continue'); if(cont) cont.onclick=()=>hide();
-  const r=document.getElementById('restart'); if(r) r.onclick=()=>{ state.level=1; state.score=0; state.badges.clear();
-    scoreEl.textContent=0; badgeEl.textContent=0; levelEl.textContent=1; map=levels[0].map; hide(); };
+  if(state.level<3){ state.level++; levelEl.textContent=state.level;
+    map=levels[state.level-1].map; rows=map.length; cols=map[0].length;
+    player.x=2.5; player.y=2.5; player.a=0;
+  } else {
+    show(`<h2>Classroom Reached! ✅</h2><p>Score: <strong>${state.score}</strong></p>
+          <div class="choices"><button onclick="location.reload()">Restart</button></div>`);
+  }
 }
 
-/* ------ Audio (simple) ------ */
+/* ---------- Simple audio toggle (works even if blocked) ---------- */
 let ac, loopInterval=null;
 function ensureAC(){ if(!ac){ ac=new (window.AudioContext||window.webkitAudioContext)(); } }
-function chime(good){
-  if(!state.audioOn) return; ensureAC();
-  const o=ac.createOscillator(), g=ac.createGain(); o.type='sine'; o.frequency.value=good?660:220;
-  g.gain.setValueAtTime(.0001,ac.currentTime); g.gain.exponentialRampToValueAtTime(.2,ac.currentTime+.02);
-  g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.25); o.connect(g).connect(ac.destination);
-  o.start(); o.stop(ac.currentTime+.26);
-}
-function startLoop(){
-  if(!state.audioOn || loopInterval) return; ensureAC();
-  loopInterval=setInterval(()=>{ if(!state.audioOn) return;
-    const o=ac.createOscillator(), g=ac.createGain(); o.type='triangle'; o.frequency.value=110+Math.random()*20;
-    g.gain.value=.02; o.connect(g).connect(ac.destination); o.start(); setTimeout(()=>o.stop(),400);
-  },1200);
-}
-function stopLoop(){ if(loopInterval){ clearInterval(loopInterval); loopInterval=null; } }
 document.getElementById('audioBtn').onclick=()=>{
   state.audioOn=!state.audioOn;
-  document.getElementById('audioBtn').textContent = state.audioOn?"🔊 Audio":"🔈 Audio";
-  if(state.audioOn){ startLoop(); chime(true);} else { stopLoop(); }
+  const b=document.getElementById('audioBtn');
+  b.textContent = state.audioOn? "🔊 Audio" : "🔈 Audio";
+  if(state.audioOn){ ensureAC(); if(!loopInterval){ loopInterval=setInterval(()=>{},1000);} }
+  else{ if(loopInterval){ clearInterval(loopInterval); loopInterval=null; } }
 };
-
-/* ------ A11y toggles ------ */
-document.getElementById('toggleHC').onclick=()=>{ state.highContrast=!state.highContrast; document.documentElement.classList.toggle('hc',state.highContrast); };
-document.getElementById('toggleDys').onclick=()=>{ state.dyslexia=!state.dyslexia; document.documentElement.classList.toggle('dyslexia',state.dyslexia); };
-document.getElementById('toggleMotion').onclick=()=>{ state.reducedMotion=!state.reducedMotion; document.documentElement.classList.toggle('reduced',state.reducedMotion); };
-
-/* ------ Encounters ------ */
-const ENCOUNTERS = [
-  { id:"hall-001", title:"Late Submission Dilemma",
-    scenario:"A student is overwhelmed and asks for an extension on tonight's lab report.",
-    choices:["Decline to keep policy consistent.","Offer a 24-hour grace period with a plan.","Give a full week with no conditions."],
-    correct_index:1,
-    theory_tags:["UDL","Formative Assessment","Trauma-Informed"],
-    feedback:[
-      "Consistency matters, but structured flexibility builds equity. Try a supportive option.",
-      "Nice. You preserved expectations while scaffolding autonomy—very UDL.",
-      "Caring impulse! Add structure so learning stays on track."
-    ],
-    difficulty:"medium", category:"Assessment & Flexibility"
-  },
-  { id:"hall-002", title:"Phones in Class",
-    scenario:"Two students are on their phones during a demonstration.",
-    choices:["Pause and set a collaborative norm for focus.","Confiscate the phones immediately.","Ignore it and continue."],
-    correct_index:0,
-    theory_tags:["Constructivism","Classroom Management","4As: Activate"],
-    feedback:[
-      "Yes—co-creating norms builds buy-in and attention.",
-      "Enforcement alone may spark resistance—invite ownership first.",
-      "Silence can signal acceptance. Try a quick norms reset."
-    ],
-    difficulty:"easy", category:"Engagement"
-  },
-  { id:"hall-003", title:"Abstract Lectures",
-    scenario:"Learners say content feels abstract and ask for more hands-on.",
-    choices:["Add a weekly mini-lab applying the concept.","Double the lecture time to cover fundamentals.","Assign extra reading."],
-    correct_index:0,
-    theory_tags:["Experiential Learning","Constructivism","4As: Apply"],
-    feedback:[
-      "Exactly—application cements understanding.",
-      "More theory won’t fix a lack of practice.",
-      "Reading helps, but practice drives transfer."
-    ],
-    difficulty:"easy", category:"Active Learning"
-  }
-];
-function randomEncounter(){
-  const e = ENCOUNTERS[Math.floor(Math.random()*ENCOUNTERS.length)];
-  const ax=Math.floor(player.x + Math.cos(player.a)*0.5), ay=Math.floor(player.y + Math.sin(player.a)*0.5);
-  const row = map[ay].split(""); row[ax]='.'; map[ay]=row.join(""); // prevent instant repeat
-  return e;
-}
-
-/* ------ Utils ------ */
-function shuffle(a){ const arr=a.slice(); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
 </script>
 </body>
 </html>
